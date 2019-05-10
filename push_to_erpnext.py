@@ -10,7 +10,10 @@ from zk import ZK, const
 
 
 
-def pull_and_process_data(device):
+def pull_process_and_push_data(device):
+    """ takes a single device config as param and pulls data from that device.
+
+    """
     attendance_success_log_file = '_'.join(["attendance_success_log",device['device_id']])
     attendance_failed_log_file = '_'.join(["attendance_failed_log",device['device_id']])
     attendance_success_logger = setup_logger(attendance_success_log_file, attendance_success_log_file+'.log')
@@ -72,9 +75,11 @@ def send_to_erpnext(biometric_rf_id, timestamp, device_id=None, log_type=None):
     if response.status_code == 200:
         return 200, json.loads(response._content)['message']['name']
     else:
-        error_logger.error('\n'.join(['Error during ERPNext API Call.',json.loads(json.loads(response._content)['exc'])[0]]))
-        # print("No Employee found for the given 'biometric_rf_id'" in json.loads(json.loads(response._content)['exc'])[0])
-        # send email?
+        if "No Employee found for the given 'biometric_rf_id'" in json.loads(json.loads(response._content)['exc'])[0]:
+            error_logger.error('\t'.join(['Error during ERPNext API Call.',str(biometric_rf_id),str(timestamp.timestamp()),str(device_id),str(log_type),"No Employee found for the given 'biometric_rf_id'"]))
+            # send email?
+        else:
+            error_logger.error('\t'.join(['Error during ERPNext API Call.',str(biometric_rf_id),str(timestamp.timestamp()),str(device_id),str(log_type),json.loads(json.loads(response._content)['exc'])[0]]))
         return response.status_code, json.loads(json.loads(response._content)['exc'])[0]
 
 
