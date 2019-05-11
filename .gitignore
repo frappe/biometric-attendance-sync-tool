@@ -1,5 +1,6 @@
 local_config.py
 .vscode
+logs/
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

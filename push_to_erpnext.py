@@ -27,7 +27,7 @@ def main():
             info_logger.info("Cleared for lift off!")
             for device in config.devices:
                 device_attendance_logs = None
-                info_logger.info("Started Device: "+ device['device_id'])
+                info_logger.info("Processing Device: "+ device['device_id'])
                 dump_file = config.LOGS_DIRECTORY+'/'+device['ip'].replace('.','_')+'_last_fetch_dump.json'
                 if os.path.exists(dump_file):
                     error_logger.error('Device Attendance Dump Found in Log Directory. This can mean the program crashed unexpectedly. Retrying with dumped data.')
@@ -44,7 +44,7 @@ def main():
                     error_logger.exception('exception when calling pull_process_and_push_data function for device'+json.dumps(device,default=str))
             info_logger.info("Mission Accomplished!")
     except:
-        error_logger.exception('exception has occured in the main function...')
+        error_logger.exception('exception has occurred in the main function...')
 
 
 def pull_process_and_push_data(device, device_attendance_logs=None):
