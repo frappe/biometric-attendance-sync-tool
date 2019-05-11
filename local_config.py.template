@@ -1,0 +1,21 @@
+
+# ERPNext related configs
+ERPNEXT_API_KEY = ''
+ERPNEXT_API_SECRET = ''
+ERPNEXT_URL = 'http://dev.local:8000'
+
+
+# operational configs
+PULL_FREQUENCY = 60 # in minutes
+LOGS_DIRECTORY = 'logs'
+
+
+# Biometric device configs (all keys mandatory)
+    #- device_id - must be unique, strictly alphanumerical chars only. no space allowed.
+    #- ip - device IP Address
+    #- punch_direction - IN/OUT
+    #- clear_from_device_on_fetch: if set to true then attendance is deleted after fetch is successful
+devices = [
+    {'device_id':'test_1','ip':'192.168.0.209', 'punch_direction': None, 'clear_from_device_on_fetch': False},
+    {'device_id':'test_2','ip':'192.168.2.209', 'punch_direction': None, 'clear_from_device_on_fetch': False}
+]
