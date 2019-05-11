@@ -4,8 +4,11 @@ import requests
 import datetime
 import json
 import os
+import sys
+import time
 import logging
 from logging.handlers import RotatingFileHandler
+sys.path.insert(1,os.path.abspath("../pyzk"))
 from zk import ZK, const
 
 
@@ -19,7 +22,7 @@ from zk import ZK, const
 
 def main():
     last_line = get_last_line_from_file('/'.join([config.LOGS_DIRECTORY,'logs.log']))
-    if last_line and datetime.datetime.strptime(last_line.split(',')[0], "%Y-%m-%d %H:%M:%S") < datetime.datetime.now() - datetime.timedelta(minutes = config.PULL_FREQUENCY):
+    if (last_line and datetime.datetime.strptime(last_line.split(',')[0], "%Y-%m-%d %H:%M:%S") < datetime.datetime.now() - datetime.timedelta(minutes = config.PULL_FREQUENCY)) or not last_line:
         info_logger.info("Cleared for lift off!")
         for device in config.devices:
             device_attendance_logs = None
@@ -168,3 +171,7 @@ if not os.path.exists(config.LOGS_DIRECTORY):
 error_logger = setup_logger('error_logger', '/'.join([config.LOGS_DIRECTORY,'error.log']),logging.ERROR)
 info_logger = setup_logger('info_logger','/'.join([config.LOGS_DIRECTORY,'logs.log']))
 
+if __name__ == "__main__":
+    while True:
+        main()
+        time.sleep(5)
