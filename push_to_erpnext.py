@@ -21,25 +21,30 @@ from zk import ZK, const
         #- this is documented as 'Real-time events' in the ZKProtocol manual.
 
 def main():
-    last_line = get_last_line_from_file('/'.join([config.LOGS_DIRECTORY,'logs.log']))
-    if (last_line and datetime.datetime.strptime(last_line.split(',')[0], "%Y-%m-%d %H:%M:%S") < datetime.datetime.now() - datetime.timedelta(minutes = config.PULL_FREQUENCY)) or not last_line:
-        info_logger.info("Cleared for lift off!")
-        for device in config.devices:
-            device_attendance_logs = None
-            info_logger.info("Started Device: "+ device['device_id'])
-            dump_file = config.LOGS_DIRECTORY+'/'+device['ip'].replace('.','_')+'_last_fetch_dump.json'
-            if os.path.exists(dump_file):
-                error_logger.error('Device Attendance Dump Found in Log Directory. This can mean the program crashed unexpectedly. Retrying with dumped data.')
-                with open(dump_file,'r') as f:
-                    device_attendance_logs = list(map(lambda x:_apply_function_to_key(x,'timestamp',datetime.datetime.fromtimestamp), json.loads(f.read())))
-            try:
-                pull_process_and_push_data(device,device_attendance_logs)
+    try:
+        last_line = get_last_line_from_file('/'.join([config.LOGS_DIRECTORY,'logs.log']))
+        if (last_line and datetime.datetime.strptime(last_line.split(',')[0], "%Y-%m-%d %H:%M:%S") < datetime.datetime.now() - datetime.timedelta(minutes = config.PULL_FREQUENCY)) or not last_line:
+            info_logger.info("Cleared for lift off!")
+            for device in config.devices:
+                device_attendance_logs = None
+                info_logger.info("Started Device: "+ device['device_id'])
+                dump_file = config.LOGS_DIRECTORY+'/'+device['ip'].replace('.','_')+'_last_fetch_dump.json'
                 if os.path.exists(dump_file):
-                    os.remove(dump_file)
-                info_logger.info("Successfully processed Device: "+ device['device_id'])
-            except:
-                error_logger.exception('exception when calling pull_process_and_push_data function for device'+json.dumps(device,default=str))
-        info_logger.info("Mission Accomplished!")
+                    error_logger.error('Device Attendance Dump Found in Log Directory. This can mean the program crashed unexpectedly. Retrying with dumped data.')
+                    with open(dump_file,'r') as f:
+                        file_contents = f.read()
+                        if file_contents:
+                            device_attendance_logs = list(map(lambda x:_apply_function_to_key(x,'timestamp',datetime.datetime.fromtimestamp), json.loads(file_contents)))
+                try:
+                    pull_process_and_push_data(device,device_attendance_logs)
+                    if os.path.exists(dump_file):
+                        os.remove(dump_file)
+                    info_logger.info("Successfully processed Device: "+ device['device_id'])
+                except:
+                    error_logger.exception('exception when calling pull_process_and_push_data function for device'+json.dumps(device,default=str))
+            info_logger.info("Mission Accomplished!")
+    except:
+        error_logger.exception('exception has occured in the main function...')
 
 
 def pull_process_and_push_data(device, device_attendance_logs=None):
@@ -91,7 +96,7 @@ def get_all_attendance_from_device(ip, port=4370, timeout=30, clear_from_device_
             # keeping a backup before clearing data in case the programs fails. 
             # if every thing goes well then this file is removed automatically at the end.
             with open(config.LOGS_DIRECTORY+'/'+ip.replace('.','_')+'_last_fetch_dump.json', 'w+') as f:
-                f.write(json.dumps(attendances,default=datetime.datetime.timestamp))
+                f.write(json.dumps(list(map(lambda x : x.__dict__,attendances)),default=datetime.datetime.timestamp))
             if clear_from_device_on_fetch:
                 x = conn.clear_attendance()
                 info_logger.info("\t".join(("Attendance Clear Attempted. Result:",str(x))))
@@ -99,10 +104,11 @@ def get_all_attendance_from_device(ip, port=4370, timeout=30, clear_from_device_
         info_logger.info("\t".join(("Device Enable Attempted. Result:",str(x))))
     except:
         error_logger.exception('exception when fetching from device...')
+        raise Exception('Device fetch failed.')
     finally:
         if conn:
             conn.disconnect()
-    return attendances
+    return list(map(lambda x : x.__dict__,attendances))
 
 
 def send_to_erpnext(biometric_rf_id, timestamp, device_id=None, log_type=None):
