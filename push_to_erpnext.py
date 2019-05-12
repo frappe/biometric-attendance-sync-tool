@@ -8,6 +8,10 @@ import sys
 import time
 import logging
 from logging.handlers import RotatingFileHandler
+
+abspath = os.path.abspath(__file__)
+dname = os.path.dirname(abspath)
+os.chdir(dname)
 sys.path.insert(1,os.path.abspath("../pyzk"))
 from zk import ZK, const
 
@@ -34,7 +38,7 @@ def main():
                 info_logger.info("Processing Device: "+ device['device_id'])
                 dump_file = config.LOGS_DIRECTORY+'/'+device['ip'].replace('.','_')+'_last_fetch_dump.json'
                 if os.path.exists(dump_file):
-                    error_logger.error('Device Attendance Dump Found in Log Directory. This can mean the program crashed unexpectedly. Retrying with dumped data.')
+                    info_logger.error('Device Attendance Dump Found in Log Directory. This can mean the program crashed unexpectedly. Retrying with dumped data.')
                     with open(dump_file,'r') as f:
                         file_contents = f.read()
                         if file_contents:
