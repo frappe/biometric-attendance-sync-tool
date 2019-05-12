@@ -8,15 +8,18 @@ Python Script to poll for Bio-metric Attendance and push to ERPNext via API
 4. Setup `local_config.py` from `local_config.py.template` file
 5. Run this script using `python push_to_erpnext.py`
 
-## Installing the windows service
+## Installing as a windows service
 1. Install pywin32 using `pip install pywin32`
 2. Got to this repository's Directory
 3. Install the windows service using `python push_biometric_windows_service.py install`
 4. Done
 
-#### update the installed windows service
+#### Update the installed windows service
 > python push_biometric_windows_service.py update
 
 #### Stop the windows service
 > net stop ERPNextBiometricPushService
+
+#### To see the status of the service
+> mmc Services.msc
 

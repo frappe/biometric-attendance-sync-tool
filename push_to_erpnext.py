@@ -21,6 +21,10 @@ from zk import ZK, const
         #- this is documented as 'Real-time events' in the ZKProtocol manual.
 
 def main():
+    """takes care of checking if it is time pull data based on config. 
+    and calling the relevent functions to pull data and push to EPRNext.
+
+    """
     try:
         last_line = get_last_line_from_file('/'.join([config.LOGS_DIRECTORY,'logs.log']))
         if (last_line and datetime.datetime.strptime(last_line.split(',')[0], "%Y-%m-%d %H:%M:%S") < datetime.datetime.now() - datetime.timedelta(minutes = config.PULL_FREQUENCY)) or not last_line:
@@ -50,6 +54,9 @@ def main():
 def pull_process_and_push_data(device, device_attendance_logs=None):
     """ takes a single device config as param and pulls data from that device.
 
+    params:
+    device: a single device config object from the local_config file
+    device_attendance_logs: fetching from device is skipped if this param is passed. used to restart failed fetches from previous runs.
     """
     attendance_success_log_file = '_'.join(["attendance_success_log",device['device_id']])
     attendance_failed_log_file = '_'.join(["attendance_failed_log",device['device_id']])
@@ -112,6 +119,9 @@ def get_all_attendance_from_device(ip, port=4370, timeout=30, clear_from_device_
 
 
 def send_to_erpnext(biometric_rf_id, timestamp, device_id=None, log_type=None):
+    """
+    Example: send_to_erpnext('12349',datetime.datetime.now(),'HO1','IN')
+    """
     url = config.ERPNEXT_URL + "/api/method/erpnext.hr.doctype.employee_attendance_log.employee_attendance_log.add_log_based_on_biometric_rf_id"
     headers = {
         'Authorization': "token "+ config.ERPNEXT_API_KEY + ":" + config.ERPNEXT_API_SECRET,
