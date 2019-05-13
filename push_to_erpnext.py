@@ -98,12 +98,12 @@ def pull_process_and_push_data(device, device_attendance_logs=None):
     for device_attendance_log in device_attendance_logs[index_of_last+1:]:
         erpnext_status_code, erpnext_message = send_to_erpnext(device_attendance_log['user_id'],device_attendance_log['timestamp'],device['device_id'],device['punch_direction'])
         if erpnext_status_code == 200:
-            attendance_success_logger.info("\t".join([erpnext_message,device_attendance_log['uid'],
+            attendance_success_logger.info("\t".join([erpnext_message,str(device_attendance_log['uid']),
                 str(device_attendance_log['user_id']),str(device_attendance_log['timestamp'].timestamp()),
                 str(device_attendance_log['punch']),str(device_attendance_log['status']),
                 json.dumps(device_attendance_log,default=str)]))
         else:
-            attendance_failed_logger.error("\t".join([str(erpnext_status_code),device_attendance_log['uid'],
+            attendance_failed_logger.error("\t".join([str(erpnext_status_code),str(device_attendance_log['uid']),
                 str(device_attendance_log['user_id']),str(device_attendance_log['timestamp'].timestamp()),
                 str(device_attendance_log['punch']),str(device_attendance_log['status']),
                 json.dumps(device_attendance_log,default=str)]))
