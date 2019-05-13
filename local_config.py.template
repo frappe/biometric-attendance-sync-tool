@@ -14,7 +14,8 @@ IMPORT_START_DATE = None # format: '20190501'
     #- device_id - must be unique, strictly alphanumerical chars only. no space allowed.
     #- ip - device IP Address
     #- punch_direction - IN/OUT
-    #- clear_from_device_on_fetch: if set to true then attendance is deleted after fetch is successful
+    #- clear_from_device_on_fetch: if set to true then attendance is deleted after fetch is successful.
+                                    #(Caution: this feature can lead to data loss if used carelessly.)
 devices = [
     {'device_id':'test_1','ip':'192.168.0.209', 'punch_direction': None, 'clear_from_device_on_fetch': False},
     {'device_id':'test_2','ip':'192.168.2.209', 'punch_direction': None, 'clear_from_device_on_fetch': False}

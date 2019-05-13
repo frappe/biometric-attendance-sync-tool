@@ -28,7 +28,9 @@ def main():
     """
     try:
         last_line = get_last_line_from_file('/'.join([config.LOGS_DIRECTORY,'logs.log']))
-        if (last_line and datetime.datetime.strptime(last_line.split(',')[0], "%Y-%m-%d %H:%M:%S") < datetime.datetime.now() - datetime.timedelta(minutes = config.PULL_FREQUENCY)) or not last_line:
+        if last_line:
+            last_line_timestamp = _safe_convert_date(last_line.split(',')[0], "%Y-%m-%d %H:%M:%S")
+        if (last_line and last_line_timestamp and last_line_timestamp < datetime.datetime.now() - datetime.timedelta(minutes = config.PULL_FREQUENCY)) or not last_line:
             info_logger.info("Cleared for lift off!")
             for device in config.devices:
                 device_attendance_logs = None
@@ -115,9 +117,9 @@ def get_all_attendance_from_device(ip, port=4370, timeout=30, clear_from_device_
     try:
         conn = zk.connect()
         x = conn.disable_device()
-        info_logger.info("\t".join(("Device Disable Attempted. Result:",str(x))))
+        info_logger.info("\t".join((ip,"Device Disable Attempted. Result:",str(x))))
         attendances = conn.get_attendance()
-        info_logger.info("\t".join(("Attendances Fetched:",str(len(attendances)))))
+        info_logger.info("\t".join((ip,"Attendances Fetched:",str(len(attendances)))))
         if len(attendances):
             # keeping a backup before clearing data incase the programs fails. 
             # if everything goes well then this file is removed automatically at the end.
@@ -125,11 +127,11 @@ def get_all_attendance_from_device(ip, port=4370, timeout=30, clear_from_device_
                 f.write(json.dumps(list(map(lambda x : x.__dict__,attendances)),default=datetime.datetime.timestamp))
             if clear_from_device_on_fetch:
                 x = conn.clear_attendance()
-                info_logger.info("\t".join(("Attendance Clear Attempted. Result:",str(x))))
+                info_logger.info("\t".join((ip,"Attendance Clear Attempted. Result:",str(x))))
         x = conn.enable_device()
-        info_logger.info("\t".join(("Device Enable Attempted. Result:",str(x))))
+        info_logger.info("\t".join((ip,"Device Enable Attempted. Result:",str(x))))
     except:
-        error_logger.exception('exception when fetching from device...')
+        error_logger.exception(str(ip)+' exception when fetching from device...')
         raise Exception('Device fetch failed.')
     finally:
         if conn:
