@@ -68,11 +68,29 @@ def pull_process_and_push_data(device, device_attendance_logs=None):
 
     index_of_last = -1
     last_line = get_last_line_from_file('/'.join([config.LOGS_DIRECTORY,attendance_success_log_file])+'.log')
-    if last_line:
-        last_user_id,last_timestamp = last_line.split("\t")[4:6]
+    import_start_date = _safe_convert_date(config.IMPORT_START_DATE, "%Y%m%d")
+    if last_line or import_start_date:
+        last_user_id = None
+        last_timestamp = None
+        if last_line:
+            last_user_id,last_timestamp = last_line.split("\t")[4:6]
+            last_timestamp = datetime.datetime.fromtimestamp(float(last_timestamp))
+        if import_start_date:
+            if last_timestamp:
+                if last_timestamp < import_start_date:
+                    last_timestamp = import_start_date
+                    last_user_id = None
+            else:
+                last_timestamp = import_start_date
         for i,x in enumerate(device_attendance_logs):
-            if last_user_id == str(x['user_id']) and datetime.datetime.fromtimestamp(float(last_timestamp)) == x['timestamp']:
-                index_of_last = i
+            if last_user_id and last_timestamp:
+                if last_user_id == str(x['user_id']) and last_timestamp == x['timestamp']:
+                    index_of_last = i
+                    break
+            elif last_timestamp:
+                if x['timestamp'] >= last_timestamp:
+                    index_of_last = i
+                    break
 
     for device_attendance_log in device_attendance_logs[index_of_last+1:]:
         erpnext_status_code, erpnext_message = send_to_erpnext(device_attendance_log['user_id'],device_attendance_log['timestamp'],device['device_id'],device['punch_direction'])
@@ -185,6 +203,12 @@ def setup_logger(name, log_file, level=logging.INFO, formatter=None):
 def _apply_function_to_key(obj,key,fn):
     obj[key] = fn(obj[key])
     return obj
+
+def _safe_convert_date(datestring,pattern):
+    try:
+        return datetime.datetime.strptime(datestring, pattern)
+    except:
+        return None
 
 if not os.path.exists(config.LOGS_DIRECTORY):
     os.makedirs(config.LOGS_DIRECTORY)
