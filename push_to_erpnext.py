@@ -28,9 +28,10 @@ def main():
     """
     try:
         last_line = get_last_line_from_file('/'.join([config.LOGS_DIRECTORY,'logs.log']))
+        last_line_timestamp = None
         if last_line:
             last_line_timestamp = _safe_convert_date(last_line.split(',')[0], "%Y-%m-%d %H:%M:%S")
-        if (last_line and last_line_timestamp and last_line_timestamp < datetime.datetime.now() - datetime.timedelta(minutes = config.PULL_FREQUENCY)) or not last_line:
+        if (last_line and last_line_timestamp and last_line_timestamp < datetime.datetime.now() - datetime.timedelta(minutes = config.PULL_FREQUENCY)) or not last_line_timestamp:
             info_logger.info("Cleared for lift off!")
             for device in config.devices:
                 device_attendance_logs = None
