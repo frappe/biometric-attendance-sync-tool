@@ -16,17 +16,14 @@ sys.path.insert(1,os.path.abspath("../pyzk"))
 from zk import ZK, const
 
 
-# concerns to address(may be much later):
-    # how will last line lookup work with log rotation when new file is created? 
-        #- will that new fill be empty at any time? or will it have a partial line from the previous line?
 
 # possible area of further developemt
     # Real-time events - setup getting events pushed from the machine rather then polling. 
         #- this is documented as 'Real-time events' in the ZKProtocol manual.
 
 def main():
-    """takes care of checking if it is time pull data based on config. 
-    and calling the relevent functions to pull data and push to EPRNext.
+    """Takes care of checking if it is time to pull data based on config,
+    then calling the relevent functions to pull data and push to EPRNext.
 
     """
     try:
@@ -56,7 +53,7 @@ def main():
 
 
 def pull_process_and_push_data(device, device_attendance_logs=None):
-    """ takes a single device config as param and pulls data from that device.
+    """ Takes a single device config as param and pulls data from that device.
 
     params:
     device: a single device config object from the local_config file
@@ -72,21 +69,21 @@ def pull_process_and_push_data(device, device_attendance_logs=None):
     index_of_last = -1
     last_line = get_last_line_from_file('/'.join([config.LOGS_DIRECTORY,attendance_success_log_file])+'.log')
     if last_line:
-        last_uid,last_timestamp = last_line.split("\t")[4:6]
+        last_user_id,last_timestamp = last_line.split("\t")[4:6]
         for i,x in enumerate(device_attendance_logs):
-            if last_uid == str(x['uid']) and datetime.datetime.fromtimestamp(float(last_timestamp)) == x['timestamp']:
+            if last_user_id == str(x['user_id']) and datetime.datetime.fromtimestamp(float(last_timestamp)) == x['timestamp']:
                 index_of_last = i
 
     for device_attendance_log in device_attendance_logs[index_of_last+1:]:
-        erpnext_status_code, erpnext_message = send_to_erpnext(device_attendance_log['uid'],device_attendance_log['timestamp'],device['device_id'],device['punch_direction'])
+        erpnext_status_code, erpnext_message = send_to_erpnext(device_attendance_log['user_id'],device_attendance_log['timestamp'],device['device_id'],device['punch_direction'])
         if erpnext_status_code == 200:
-            attendance_success_logger.info("\t".join([erpnext_message,device_attendance_log['user_id'],
-                str(device_attendance_log['uid']),str(device_attendance_log['timestamp'].timestamp()),
+            attendance_success_logger.info("\t".join([erpnext_message,device_attendance_log['uid'],
+                str(device_attendance_log['user_id']),str(device_attendance_log['timestamp'].timestamp()),
                 str(device_attendance_log['punch']),str(device_attendance_log['status']),
                 json.dumps(device_attendance_log,default=str)]))
         else:
-            attendance_failed_logger.error("\t".join([str(erpnext_status_code),device_attendance_log['user_id'],
-                str(device_attendance_log['uid']),str(device_attendance_log['timestamp'].timestamp()),
+            attendance_failed_logger.error("\t".join([str(erpnext_status_code),device_attendance_log['uid'],
+                str(device_attendance_log['user_id']),str(device_attendance_log['timestamp'].timestamp()),
                 str(device_attendance_log['punch']),str(device_attendance_log['status']),
                 json.dumps(device_attendance_log,default=str)]))
             raise Exception('API Call to ERPNext Failed.')
@@ -104,8 +101,8 @@ def get_all_attendance_from_device(ip, port=4370, timeout=30, clear_from_device_
         attendances = conn.get_attendance()
         info_logger.info("\t".join(("Attendances Fetched:",str(len(attendances)))))
         if len(attendances):
-            # keeping a backup before clearing data in case the programs fails. 
-            # if every thing goes well then this file is removed automatically at the end.
+            # keeping a backup before clearing data incase the programs fails. 
+            # if everything goes well then this file is removed automatically at the end.
             with open(config.LOGS_DIRECTORY+'/'+ip.replace('.','_')+'_last_fetch_dump.json', 'w+') as f:
                 f.write(json.dumps(list(map(lambda x : x.__dict__,attendances)),default=datetime.datetime.timestamp))
             if clear_from_device_on_fetch:
@@ -150,6 +147,9 @@ def send_to_erpnext(biometric_rf_id, timestamp, device_id=None, log_type=None):
 
 
 def get_last_line_from_file(file):
+    # concerns to address(may be much later):
+        # how will last line lookup work with log rotation when a new file is created? 
+            #- will that new file be empty at any time? or will it have a partial line from the previous file?
     line = None
     if os.stat(file).st_size < 5000:
         # quick hack to handle files with one line
