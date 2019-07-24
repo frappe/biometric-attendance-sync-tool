@@ -14,7 +14,7 @@ dname = os.path.dirname(abspath)
 os.chdir(dname)
 sys.path.insert(1, os.path.abspath("../pyzk"))
 from zk import ZK, const
-
+EMPLOYEE_NOT_FOUND_ERROR_MESSAGE = "No Employee found for the given employee field value."
 
 
 # possible area of further developemt
@@ -108,7 +108,8 @@ def pull_process_and_push_data(device, device_attendance_logs=None):
                 str(device_attendance_log['user_id']), str(device_attendance_log['timestamp'].timestamp()),
                 str(device_attendance_log['punch']), str(device_attendance_log['status']),
                 json.dumps(device_attendance_log, default=str)]))
-            raise Exception('API Call to ERPNext Failed.')
+            if EMPLOYEE_NOT_FOUND_ERROR_MESSAGE not in erpnext_message:
+                raise Exception('API Call to ERPNext Failed.')
 
 
 def get_all_attendance_from_device(ip, port=4370, timeout=30, device_id=None, clear_from_device_on_fetch=False):
@@ -146,7 +147,7 @@ def send_to_erpnext(employee_field_value, timestamp, device_id=None, log_type=No
     """
     Example: send_to_erpnext('12349',datetime.datetime.now(),'HO1','IN')
     """
-    url = config.ERPNEXT_URL + "/api/method/erpnext.hr.doctype.employee_attendance_log.employee_attendance_log.add_log_based_on_employee_field"
+    url = config.ERPNEXT_URL + "/api/method/erpnext.hr.doctype.employee_checkin.employee_checkin.add_log_based_on_employee_field"
     headers = {
         'Authorization': "token "+ config.ERPNEXT_API_KEY + ":" + config.ERPNEXT_API_SECRET,
         'Accept': 'application/json'
@@ -161,8 +162,8 @@ def send_to_erpnext(employee_field_value, timestamp, device_id=None, log_type=No
     if response.status_code == 200:
         return 200, json.loads(response._content)['message']['name']
     else:
-        if "No Employee found for the given employee field value." in json.loads(json.loads(response._content)['exc'])[0]:
-            error_logger.error('\t'.join(['Error during ERPNext API Call.', str(employee_field_value), str(timestamp.timestamp()), str(device_id), str(log_type), "No Employee found for the given employee field value."]))
+        if EMPLOYEE_NOT_FOUND_ERROR_MESSAGE in json.loads(json.loads(response._content)['exc'])[0]:
+            error_logger.error('\t'.join(['Error during ERPNext API Call.', str(employee_field_value), str(timestamp.timestamp()), str(device_id), str(log_type), json.loads(json.loads(response._content)['exc'])[0]]))
             # TODO: send email?
         else:
             error_logger.error('\t'.join(['Error during ERPNext API Call.', str(employee_field_value), str(timestamp.timestamp()), str(device_id), str(log_type), json.loads(json.loads(response._content)['exc'])[0]]))
