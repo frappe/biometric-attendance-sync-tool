@@ -17,7 +17,7 @@ class PythonCornerExample(SMWinservice):
     def main(self):
         while self.isrunning:
             main()
-            time.sleep(5)
+            time.sleep(15)
 
 if __name__ == '__main__':
     PythonCornerExample.parse_command_line()

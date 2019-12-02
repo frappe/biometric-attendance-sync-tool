@@ -8,18 +8,22 @@ import sys
 import time
 import logging
 from logging.handlers import RotatingFileHandler
-
-abspath = os.path.abspath(__file__)
-dname = os.path.dirname(abspath)
-os.chdir(dname)
-sys.path.insert(1, os.path.abspath("../pyzk"))
+import pickledb
 from zk import ZK, const
-EMPLOYEE_NOT_FOUND_ERROR_MESSAGE = "No Employee found for the given employee field value."
 
+EMPLOYEE_NOT_FOUND_ERROR_MESSAGE = "No Employee found for the given employee field value."
 
 # possible area of further developemt
     # Real-time events - setup getting events pushed from the machine rather then polling.
         #- this is documented as 'Real-time events' in the ZKProtocol manual.
+
+# Notes:
+# Status Keys in status.json
+#  - lift_off_timestamp
+#  - mission_accomplished_timestamp
+#  - <device_id>_pull_timestamp
+#  - <device_id>_push_timestamp
+#  - <shift_type>_sync_timestamp
 
 def main():
     """Takes care of checking if it is time to pull data based on config,
@@ -27,11 +31,9 @@ def main():
 
     """
     try:
-        last_line = get_last_line_from_file('/'.join([config.LOGS_DIRECTORY, 'logs.log']))
-        last_line_timestamp = None
-        if last_line:
-            last_line_timestamp = _safe_convert_date(last_line.split(',')[0], "%Y-%m-%d %H:%M:%S")
-        if (last_line and last_line_timestamp and last_line_timestamp < datetime.datetime.now() - datetime.timedelta(minutes=config.PULL_FREQUENCY)) or not last_line_timestamp:
+        last_lift_off_timestamp = _safe_convert_date(status.get('lift_off_timestamp'), "%Y-%m-%d %H:%M:%S.%f")
+        if (last_lift_off_timestamp and last_lift_off_timestamp < datetime.datetime.now() - datetime.timedelta(minutes=config.PULL_FREQUENCY)) or not last_lift_off_timestamp:
+            status.set('lift_off_timestamp', str(datetime.datetime.now()))
             info_logger.info("Cleared for lift off!")
             for device in config.devices:
                 device_attendance_logs = None
@@ -45,11 +47,14 @@ def main():
                             device_attendance_logs = list(map(lambda x: _apply_function_to_key(x, 'timestamp', datetime.datetime.fromtimestamp), json.loads(file_contents)))
                 try:
                     pull_process_and_push_data(device, device_attendance_logs)
+                    status.set(f'{device["device_id"]}_push_timestamp', str(datetime.datetime.now()))
                     if os.path.exists(dump_file):
                         os.remove(dump_file)
                     info_logger.info("Successfully processed Device: "+ device['device_id'])
                 except:
                     error_logger.exception('exception when calling pull_process_and_push_data function for device'+json.dumps(device, default=str))
+            update_shift_last_sync_timestamp(config.shift_type_device_mapping)
+            status.set('mission_accomplished_timestamp', str(datetime.datetime.now()))
             info_logger.info("Mission Accomplished!")
     except:
         error_logger.exception('exception has occurred in the main function...')
@@ -68,7 +73,8 @@ def pull_process_and_push_data(device, device_attendance_logs=None):
     attendance_failed_logger = setup_logger(attendance_failed_log_file, '/'.join([config.LOGS_DIRECTORY, attendance_failed_log_file])+'.log')
     if not device_attendance_logs:
         device_attendance_logs = get_all_attendance_from_device(device['ip'], device_id=device['device_id'], clear_from_device_on_fetch=device['clear_from_device_on_fetch'])
-
+        if not device_attendance_logs:
+            return
     # for finding the last successfull push and restart from that point (or) from a set 'config.IMPORT_START_DATE' (whichever is later)
     index_of_last = -1
     last_line = get_last_line_from_file('/'.join([config.LOGS_DIRECTORY, attendance_success_log_file])+'.log')
@@ -120,9 +126,12 @@ def get_all_attendance_from_device(ip, port=4370, timeout=30, device_id=None, cl
     try:
         conn = zk.connect()
         x = conn.disable_device()
+        # device is disabled when fetching data
         info_logger.info("\t".join((ip, "Device Disable Attempted. Result:", str(x))))
         attendances = conn.get_attendance()
         info_logger.info("\t".join((ip, "Attendances Fetched:", str(len(attendances)))))
+        status.set(f'{device_id}_push_timestamp', None)
+        status.set(f'{device_id}_pull_timestamp', str(datetime.datetime.now()))
         if len(attendances):
             # keeping a backup before clearing data incase the programs fails.
             # if everything goes well then this file is removed automatically at the end.
@@ -169,6 +178,43 @@ def send_to_erpnext(employee_field_value, timestamp, device_id=None, log_type=No
             error_logger.error('\t'.join(['Error during ERPNext API Call.', str(employee_field_value), str(timestamp.timestamp()), str(device_id), str(log_type), json.loads(json.loads(response._content)['exc'])[0]]))
         return response.status_code, json.loads(json.loads(response._content)['exc'])[0]
 
+def update_shift_last_sync_timestamp(shift_type_device_mapping):
+    """
+    ### algo for updating the sync_current_timestamp
+    - get a list of devices to check
+    - check if all the devices have a non 'None' push_timestamp
+        - check if the earliest of the pull timestamp is greater than sync_current_timestamp
+            - then update this time lowest time to the shift
+
+    """
+    for shift_type_device_map in shift_type_device_mapping:
+        all_devices_pushed = True
+        pull_timestamp_array = []
+        for device_id in shift_type_device_map['related_device_id']:
+            if not status.get(f'{device_id}_push_timestamp'):
+                all_devices_pushed = False
+                break
+            pull_timestamp_array.append(_safe_convert_date(status.get(f'{device_id}_pull_timestamp'), "%Y-%m-%d %H:%M:%S.%f"))
+        if all_devices_pushed:
+            sync_current_timestamp = _safe_convert_date(status.get(f'{shift_type_device_map["shift_type_name"]}_sync_timestamp'), "%Y-%m-%d %H:%M:%S.%f")
+            min_pull_timestamp = min(pull_timestamp_array)
+            if min_pull_timestamp > sync_current_timestamp:
+                send_shift_sync_to_erpnext(shift_type_device_map['shift_type_name'], min_pull_timestamp)
+
+def send_shift_sync_to_erpnext(shift_type_name, sync_timestamp):
+    url = config.ERPNEXT_URL + "/api/resource/Shift Type/" + shift_type_name
+    headers = {
+        'Authorization': "token "+ config.ERPNEXT_API_KEY + ":" + config.ERPNEXT_API_SECRET,
+        'Accept': 'application/json'
+    }
+    data = {
+        "last_sync_of_checkin" : str(sync_timestamp)
+    }
+    response = requests.request("PUT", url, headers=headers, data=json.dumps(data))
+    if response.status_code == 200:
+        info_logger.info("\t".join(['Shift Type last_sync_of_checkin Updated', str(shift_type_name), str(sync_timestamp.timestamp())]))
+    else:
+        error_logger.error('\t'.join(['Error during ERPNext Shift Type API Call.', str(shift_type_name), str(sync_timestamp.timestamp()), json.loads(json.loads(response._content)['exc'])[0]]))
 
 def get_last_line_from_file(file):
     # concerns to address(may be much later):
@@ -205,7 +251,6 @@ def setup_logger(name, log_file, level=logging.INFO, formatter=None):
 
     return logger
 
-
 def _apply_function_to_key(obj, key, fn):
     obj[key] = fn(obj[key])
     return obj
@@ -216,12 +261,17 @@ def _safe_convert_date(datestring, pattern):
     except:
         return None
 
+# setup logger and status
 if not os.path.exists(config.LOGS_DIRECTORY):
     os.makedirs(config.LOGS_DIRECTORY)
 error_logger = setup_logger('error_logger', '/'.join([config.LOGS_DIRECTORY, 'error.log']), logging.ERROR)
 info_logger = setup_logger('info_logger', '/'.join([config.LOGS_DIRECTORY, 'logs.log']))
+status = pickledb.load('/'.join([config.LOGS_DIRECTORY, 'status.json']), True)
 
-if __name__ == "__main__":
+def infinite_loop(sleep_time=15):
     while True:
         main()
-        time.sleep(15)
+        time.sleep(sleep_time)
+
+if __name__ == "__main__":
+    infinite_loop()

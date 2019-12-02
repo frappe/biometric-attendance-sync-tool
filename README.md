@@ -2,12 +2,11 @@
 Python Script to poll for Bio-metric Attendance and push to ERPNext via API
 
 ## Instructions to run this script
-1. Install python3.7 and git
-2. Do `pip install requests`
-3. Clone `pyzk` library using `git clone https://github.com/karthikeyan5/pyzk`
-4. Clone this repository using `git clone https://github.com/karthikeyan5/push-biometric-erpnext`
-5. Setup `local_config.py` from `local_config.py.template` file
-6. Run this script using `python push_to_erpnext.py`
+1. Install python3 and git (please note python 2 is **NOT** supported)
+2. Clone this repository using `git clone https://github.com/frappe/push-biometric-erpnext`
+3. Run `cd push-biometric-erpnext && python3 -m venv venv && source venv/bin/activate && pip install -r requirements.txt`
+4. Setup `local_config.py` by making a copy of and renaming `local_config.py.template` file. [Learn More](#Note-on-setting-up-local_config.py)
+5. Run this script using `python3 push_to_erpnext.py`
 
 ## Installing as a windows service
 1. Install pywin32 using `pip install pywin32`
@@ -24,3 +23,11 @@ Python Script to poll for Bio-metric Attendance and push to ERPNext via API
 #### To see the status of the service
 > mmc Services.msc
 
+#### Note on setting up local_config.py
+- You need to make a copy of `local_config.py.template` file and rename it to `local_config.py`
+- Please fill in the relavent sections in this file as per the comments in it.
+> TODO: fill this section with more info to help Non-Technical Individuals.
+
+#### Other TODO:
+ - Write a setup/auto-install script and ask questions to fill-in/update the `local_config.py` file.
+ - Write a dev note on how stuff works in the `push_to_erpnext.py` script?

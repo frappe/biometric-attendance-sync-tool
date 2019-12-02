@@ -20,3 +20,8 @@ devices = [
     {'device_id':'test_1','ip':'192.168.0.209', 'punch_direction': None, 'clear_from_device_on_fetch': False},
     {'device_id':'test_2','ip':'192.168.2.209', 'punch_direction': None, 'clear_from_device_on_fetch': False}
 ]
+
+# Configs updating sync timestamp in the Shift Type DocType
+shift_type_device_mapping = [
+    {'shift_type_name': 'Shift1', 'related_device_id': ['test_1','test_2']}
+]
