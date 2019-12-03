@@ -53,7 +53,8 @@ def main():
                     info_logger.info("Successfully processed Device: "+ device['device_id'])
                 except:
                     error_logger.exception('exception when calling pull_process_and_push_data function for device'+json.dumps(device, default=str))
-            update_shift_last_sync_timestamp(config.shift_type_device_mapping)
+            if hasattr(config,'shift_type_device_mapping'):
+                update_shift_last_sync_timestamp(config.shift_type_device_mapping)
             status.set('mission_accomplished_timestamp', str(datetime.datetime.now()))
             info_logger.info("Mission Accomplished!")
     except:

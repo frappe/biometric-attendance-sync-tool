@@ -23,9 +23,21 @@ Python Script to poll for biometric logs and push to ERPNext via API.
 #### To see the status of the service
 > mmc Services.msc
 
-#### Note on setting up local config
+### Note on setting up local config
 - You need to make a copy of `local_config.py.template` file and rename it to `local_config.py`
-- Please fill in the relavent sections in this file as per the comments in it.
+- Please fill in the relevant sections in this file as per the comments in it.
+- Below are the delineation of the keys contained in `local_config.py`:
+  - ERPNext Connection Configs:
+    - `ERPNEXT_API_KEY`: The API Key of the ERPNext User
+    - `ERPNEXT_API_SECRET`: The API Secret of the ERPNext User
+      > Please refer to [this link](https://frappe.io/docs/user/en/guides/integration/how_to_set_up_token_based_auth#generate-a-token) to learn how to generate API key and secret for a user in ERPNext. 
+
+      > The ERPNext User who's API key and secret is used, needs to have the following permissions: 
+
+      > 1. Create Permissions for 'Employee Checkin' DocType.
+
+      > 2. Write access to 'Shift Type' DocType.
+    - `ERPNEXT_URL`: The web address at which you would access your ERPNext. eg:`'https://yourcompany.erpnext.com'`, `'https://erp.yourcompany.com'`
 > TODO: fill this section with more info to help Non-Technical Individuals.
 
 #### Other TODO:
