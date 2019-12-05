@@ -12,6 +12,8 @@ import pickledb
 from zk import ZK, const
 
 EMPLOYEE_NOT_FOUND_ERROR_MESSAGE = "No Employee found for the given employee field value."
+device_punch_values_IN = getattr(config, 'device_punch_values_IN', [0,4])
+device_punch_values_OUT = getattr(config, 'device_punch_values_OUT', [1,5])
 
 # possible area of further developemt
     # Real-time events - setup getting events pushed from the machine rather then polling.
@@ -104,7 +106,15 @@ def pull_process_and_push_data(device, device_attendance_logs=None):
                     break
 
     for device_attendance_log in device_attendance_logs[index_of_last+1:]:
-        erpnext_status_code, erpnext_message = send_to_erpnext(device_attendance_log['user_id'], device_attendance_log['timestamp'], device['device_id'], device['punch_direction'])
+        punch_direction = device['punch_direction']
+        if punch_direction == 'AUTO':
+            if device_attendance_log['punch'] in device_punch_values_OUT:
+                punch_direction = 'OUT'
+            elif device_attendance_log['punch'] in device_punch_values_IN:
+                punch_direction = 'IN'
+            else:
+                punch_direction = None
+        erpnext_status_code, erpnext_message = send_to_erpnext(device_attendance_log['user_id'], device_attendance_log['timestamp'], device['device_id'], punch_direction)
         if erpnext_status_code == 200:
             attendance_success_logger.info("\t".join([erpnext_message, str(device_attendance_log['uid']),
                 str(device_attendance_log['user_id']), str(device_attendance_log['timestamp'].timestamp()),

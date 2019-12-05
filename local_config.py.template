@@ -13,7 +13,7 @@ IMPORT_START_DATE = None # format: '20190501'
 # Biometric device configs (all keys mandatory)
     #- device_id - must be unique, strictly alphanumerical chars only. no space allowed.
     #- ip - device IP Address
-    #- punch_direction - IN/OUT
+    #- punch_direction - 'IN'/'OUT'/'AUTO'/None
     #- clear_from_device_on_fetch: if set to true then attendance is deleted after fetch is successful.
                                     #(Caution: this feature can lead to data loss if used carelessly.)
 devices = [
