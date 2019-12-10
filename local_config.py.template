@@ -7,7 +7,7 @@ ERPNEXT_URL = 'http://dev.local:8000'
 
 # operational configs
 PULL_FREQUENCY = 60 # in minutes
-LOGS_DIRECTORY = 'logs'
+LOGS_DIRECTORY = 'logs' # logs of this script is stored in this directory
 IMPORT_START_DATE = None # format: '20190501'
 
 # Biometric device configs (all keys mandatory)
