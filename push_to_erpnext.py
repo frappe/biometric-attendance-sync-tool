@@ -182,12 +182,13 @@ def send_to_erpnext(employee_field_value, timestamp, device_id=None, log_type=No
     if response.status_code == 200:
         return 200, json.loads(response._content)['message']['name']
     else:
-        if EMPLOYEE_NOT_FOUND_ERROR_MESSAGE in json.loads(json.loads(response._content)['exc'])[0]:
-            error_logger.error('\t'.join(['Error during ERPNext API Call.', str(employee_field_value), str(timestamp.timestamp()), str(device_id), str(log_type), json.loads(json.loads(response._content)['exc'])[0]]))
+        error_str = _safe_get_error_str(response)
+        if EMPLOYEE_NOT_FOUND_ERROR_MESSAGE in error_str:
+            error_logger.error('\t'.join(['Error during ERPNext API Call.', str(employee_field_value), str(timestamp.timestamp()), str(device_id), str(log_type), error_str]))
             # TODO: send email?
         else:
-            error_logger.error('\t'.join(['Error during ERPNext API Call.', str(employee_field_value), str(timestamp.timestamp()), str(device_id), str(log_type), json.loads(json.loads(response._content)['exc'])[0]]))
-        return response.status_code, json.loads(json.loads(response._content)['exc'])[0]
+            error_logger.error('\t'.join(['Error during ERPNext API Call.', str(employee_field_value), str(timestamp.timestamp()), str(device_id), str(log_type), error_str]))
+        return response.status_code, error_str
 
 def update_shift_last_sync_timestamp(shift_type_device_mapping):
     """
@@ -209,8 +210,10 @@ def update_shift_last_sync_timestamp(shift_type_device_mapping):
         if all_devices_pushed:
             sync_current_timestamp = _safe_convert_date(status.get(f'{shift_type_device_map["shift_type_name"]}_sync_timestamp'), "%Y-%m-%d %H:%M:%S.%f")
             min_pull_timestamp = min(pull_timestamp_array)
-            if min_pull_timestamp > sync_current_timestamp:
-                send_shift_sync_to_erpnext(shift_type_device_map['shift_type_name'], min_pull_timestamp)
+            if (sync_current_timestamp and min_pull_timestamp > sync_current_timestamp) or (min_pull_timestamp and not sync_current_timestamp):
+                response_code = send_shift_sync_to_erpnext(shift_type_device_map['shift_type_name'], min_pull_timestamp)
+                if response_code == 200:
+                    status.set(f'{shift_type_device_map["shift_type_name"]}_sync_timestamp', str(min_pull_timestamp))
 
 def send_shift_sync_to_erpnext(shift_type_name, sync_timestamp):
     url = config.ERPNEXT_URL + "/api/resource/Shift Type/" + shift_type_name
@@ -221,11 +224,16 @@ def send_shift_sync_to_erpnext(shift_type_name, sync_timestamp):
     data = {
         "last_sync_of_checkin" : str(sync_timestamp)
     }
-    response = requests.request("PUT", url, headers=headers, data=json.dumps(data))
-    if response.status_code == 200:
-        info_logger.info("\t".join(['Shift Type last_sync_of_checkin Updated', str(shift_type_name), str(sync_timestamp.timestamp())]))
-    else:
-        error_logger.error('\t'.join(['Error during ERPNext Shift Type API Call.', str(shift_type_name), str(sync_timestamp.timestamp()), json.loads(json.loads(response._content)['exc'])[0]]))
+    try:
+        response = requests.request("PUT", url, headers=headers, data=json.dumps(data))
+        if response.status_code == 200:
+            info_logger.info("\t".join(['Shift Type last_sync_of_checkin Updated', str(shift_type_name), str(sync_timestamp.timestamp())]))
+        else:
+            error_str = _safe_get_error_str(response)
+            error_logger.error('\t'.join(['Error during ERPNext Shift Type API Call.', str(shift_type_name), str(sync_timestamp.timestamp()), error_str]))
+        return response.status_code
+    except:
+        error_logger.exception("\t".join(['exception when updating last_sync_of_checkin in Shift Type', str(shift_type_name), str(sync_timestamp.timestamp())]))
 
 def get_last_line_from_file(file):
     # concerns to address(may be much later):
@@ -271,6 +279,17 @@ def _safe_convert_date(datestring, pattern):
         return datetime.datetime.strptime(datestring, pattern)
     except:
         return None
+
+def _safe_get_error_str(res):
+    try:
+        error_json = json.loads(res._content)
+        if 'exc' in error_json: # this means traceback is available
+            error_str = json.loads(error_json['exc'])[0]
+        else:
+            error_str = json.dumps(error_json)
+    except:
+        error_str = str(res.__dict__)
+    return error_str
 
 # setup logger and status
 if not os.path.exists(config.LOGS_DIRECTORY):
