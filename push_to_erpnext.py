@@ -299,6 +299,7 @@ info_logger = setup_logger('info_logger', '/'.join([config.LOGS_DIRECTORY, 'logs
 status = pickledb.load('/'.join([config.LOGS_DIRECTORY, 'status.json']), True)
 
 def infinite_loop(sleep_time=15):
+    print("Service Running...")
     while True:
         main()
         time.sleep(sleep_time)
