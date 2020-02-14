@@ -23,5 +23,5 @@ devices = [
 
 # Configs updating sync timestamp in the Shift Type DocType
 shift_type_device_mapping = [
-    {'shift_type_name': 'Shift1', 'related_device_id': ['test_1','test_2']}
+    {'shift_type_name': ['Shift1'], 'related_device_id': ['test_1','test_2']}
 ]

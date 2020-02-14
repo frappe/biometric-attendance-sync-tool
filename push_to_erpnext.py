@@ -195,8 +195,8 @@ def update_shift_last_sync_timestamp(shift_type_device_mapping):
     ### algo for updating the sync_current_timestamp
     - get a list of devices to check
     - check if all the devices have a non 'None' push_timestamp
-        - check if the earliest of the pull timestamp is greater than sync_current_timestamp
-            - then update this time lowest time to the shift
+        - check if the earliest of the pull timestamp is greater than sync_current_timestamp for each shift name
+            - then update this min of pull timestamp to the shift
 
     """
     for shift_type_device_map in shift_type_device_mapping:
@@ -208,12 +208,18 @@ def update_shift_last_sync_timestamp(shift_type_device_mapping):
                 break
             pull_timestamp_array.append(_safe_convert_date(status.get(f'{device_id}_pull_timestamp'), "%Y-%m-%d %H:%M:%S.%f"))
         if all_devices_pushed:
-            sync_current_timestamp = _safe_convert_date(status.get(f'{shift_type_device_map["shift_type_name"]}_sync_timestamp'), "%Y-%m-%d %H:%M:%S.%f")
             min_pull_timestamp = min(pull_timestamp_array)
-            if (sync_current_timestamp and min_pull_timestamp > sync_current_timestamp) or (min_pull_timestamp and not sync_current_timestamp):
-                response_code = send_shift_sync_to_erpnext(shift_type_device_map['shift_type_name'], min_pull_timestamp)
-                if response_code == 200:
-                    status.set(f'{shift_type_device_map["shift_type_name"]}_sync_timestamp', str(min_pull_timestamp))
+            if isinstance(shift_type_device_map['shift_type_name'], str): # for backward compatibility of config file
+                shift_type_device_map['shift_type_name'] = [shift_type_device_map['shift_type_name']]
+            for shift in shift_type_device_map['shift_type_name']:
+                try:
+                    sync_current_timestamp = _safe_convert_date(status.get(f'{shift}_sync_timestamp'), "%Y-%m-%d %H:%M:%S.%f")
+                    if (sync_current_timestamp and min_pull_timestamp > sync_current_timestamp) or (min_pull_timestamp and not sync_current_timestamp):
+                        response_code = send_shift_sync_to_erpnext(shift, min_pull_timestamp)
+                        if response_code == 200:
+                            status.set(f'{shift}_sync_timestamp', str(min_pull_timestamp))
+                except:
+                    error_logger.exception('Exception in update_shift_last_sync_timestamp, for shift:'+shift)
 
 def send_shift_sync_to_erpnext(shift_type_name, sync_timestamp):
     url = config.ERPNEXT_URL + "/api/resource/Shift Type/" + shift_type_name
