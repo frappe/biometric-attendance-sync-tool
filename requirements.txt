@@ -1,3 +1,4 @@
 requests
 pickledb
 pyzk
+PyQt5
