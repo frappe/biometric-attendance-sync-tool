@@ -1,8 +1,7 @@
 import sys
-from PyQt5 import QtWidgets, QtCore
-from PyQt5.QtWidgets import QMainWindow, QApplication, QLineEdit, QPushButton, QLabel
-from PyQt5.QtWidgets import QMessageBox
-from PyQt5.QtGui import QIntValidator, QIntValidator, QRegExpValidator, QPainter
+from PyQt5 import QtWidgets
+from PyQt5.QtWidgets import QMainWindow, QApplication, QLineEdit, QPushButton, QLabel, QMessageBox
+from PyQt5.QtGui import QIntValidator, QRegExpValidator
 from PyQt5.QtCore import QRegExp
 import os, json
 
@@ -21,7 +20,7 @@ class BiometricEasyInstaller(QMainWindow):
 		self.show()
 
 	def setup_window(self):
-		self.setGeometry(0, 0, 500, 700)
+		self.setFixedSize(470, 550)
 		self.setWindowTitle('ERPNext Biometric Service')
 
 	def setup_textboxes_and_label(self):
@@ -32,33 +31,36 @@ class BiometricEasyInstaller(QMainWindow):
 		self.create_label("API Key", "api_key", 20, 60, 200, 30)
 		self.create_field("textbox_erpnext_api_key", 20, 90, 200, 30)
 
-		self.create_label("ERPNext URL", "erpnext_url", 250, 0, 200, 30)
-		self.create_field("textbox_erpnext_url", 250, 30, 200, 30)
+		self.create_label("ERPNext URL", "erpnext_url", 20, 120, 200, 30)
+		self.create_field("textbox_erpnext_url", 20, 150, 200, 30)
 
-		self.create_label("Pull Frequency(In Minutes)", "pull_frequency", 250, 60, 200, 30)
-		self.create_field("textbox_pull_frequency", 250, 90, 200, 30)
+
+		self.create_label("Pull Frequency (in minutes)", "pull_frequency", 250, 0, 200, 30)
+		self.create_field("textbox_pull_frequency", 250, 30, 200, 30)
 
 		#validating integer
 		self.onlyInt = QIntValidator(10, 30)
 		self.textbox_pull_frequency.setValidator(self.onlyInt)
 
-		self.create_label("Import start date", "import_start_date", 250, 120, 200, 30)
-		self.create_field("textbox_import_start_date", 250, 150, 200, 30)
-		self.validate_data("^\d{1,2}\/\d{1,2}\/\d{4}$", "textbox_import_start_date")
+		self.create_label("Import Start Date (DD/MM/YYYY)", "import_start_date", 250, 60, 200, 30)
+		self.create_field("textbox_import_start_date", 250, 90, 200, 30)
+		self.validate_data(r"^\d{1,2}/\d{1,2}/\d{4}$", "textbox_import_start_date")
 
-		self.create_label("Device ID", "device_id", 20, 260, 0, 0)
-		self.create_label("Device IP", "device_ip", 150, 260, 0, 0)
-		self.create_label("Shift", "shift", 320, 260, 0, 0)	
+		self.create_separator(210, 470)
+		self.create_button('+', 'add', 390, 230, 35, 30, self.add_devices_fields)
+		self.create_button('-', 'remove', 420, 230, 35, 30, self.remove_devices_fields)
+
+		self.create_label("Device ID", "device_id", 20, 260, 0, 30)
+		self.create_label("Device IP", "device_ip", 170, 260, 0, 30)
+		self.create_label("Shift", "shift", 320, 260, 0, 0)
 
 		# First Row for table
-		self.create_field("device_id_0", 20, 290, 150, 30)
-		self.create_field("device_ip_0", 150, 290, 150, 30)
+		self.create_field("device_id_0", 20, 290, 145, 30)
+		self.create_field("device_ip_0", 165, 290, 145, 30)
 		self.validate_data(self.reg_exp_for_ip, "device_ip_0")
-		self.create_field("shift_0", 300, 290, 150, 30)
+		self.create_field("shift_0", 310, 290, 145, 30)
 
-		#Actions buttons
-		self.create_button('Add', 'add', 20, 230, 130, 30, self.add_devices_fields)
-		self.create_button('Remove', 'remove', 320, 230, 130, 30, self.remove_devices_fields)
+		# Actions buttons
 		self.create_button('Set Configuration', 'set_conf', 20, 500, 130, 30, self.setup_local_config)
 		self.create_button('Start Service', 'start_service', 320, 500, 130, 30, self.integrate_biometric, enable=False)
 
@@ -79,7 +81,15 @@ class BiometricEasyInstaller(QMainWindow):
 		field.resize(height, width)
 		field.show()
 
-	def create_button(self, button_label, button_name,x, y , height, width, callback_function, enable = True):
+	def create_separator(self, y, width):
+		setattr(self, 'separator', QLineEdit(self))
+		field  = getattr(self, 'separator')
+		field.move(0, y)
+		field.resize(width, 5)
+		field.setEnabled(False)
+		field.show()
+
+	def create_button(self, button_label, button_name, x, y, height, width, callback_function, enable = True):
 		setattr(self,  button_name, QPushButton(button_label, self))
 		button = getattr(self, button_name)
 		button.move(x, y)
@@ -97,10 +107,10 @@ class BiometricEasyInstaller(QMainWindow):
 	def add_devices_fields(self):
 		if self.counter < 5:
 			self.counter += 1
-			self.create_field("device_id_" + str(self.counter), 20, 290+(self.counter * 30), 150, 30)
-			self.create_field("device_ip_" + str(self.counter), 150, 290+(self.counter * 30), 150, 30)
+			self.create_field("device_id_" + str(self.counter), 20, 290+(self.counter * 30), 145, 30)
+			self.create_field("device_ip_" + str(self.counter), 165, 290+(self.counter * 30), 145, 30)
 			self.validate_data(self.reg_exp_for_ip, "device_ip_" + str(self.counter))
-			self.create_field("shift_" + str(self.counter), 300, 290+(self.counter * 30), 150, 30)
+			self.create_field("shift_" + str(self.counter), 310, 290+(self.counter * 30), 145, 30)
 
 	# data validator
 	def validate_data(self, reg_exp, field_name):
@@ -126,8 +136,8 @@ class BiometricEasyInstaller(QMainWindow):
 		print("Starting Service...")
 		start_service_command = 'python -c "from push_to_erpnext import infinite_loop; infinite_loop()"'
 		os.system(start_service_command)
-		create_message_box("Messasge", "Service Running")
-		
+		create_message_box("Message", "Service Running")
+
 	def setup_local_config(self):
 		print("Setting Local Configuration...")
 		if os.path.exists("local_config.py"):
@@ -138,13 +148,13 @@ class BiometricEasyInstaller(QMainWindow):
 		config = self.get_local_config()
 		if not config:
 			print("Local Configuration not Updated...")
-			return 0 
+			return 0
 
 		local_config_py.write(config)
 
 		print("Local Configuration Updated.")
 
-		create_message_box("Messasge", "Configuration Updated.\n\nClick on Start Service.")
+		create_message_box("Message", "Configuration Updated.\n\nClick on Start Service.")
 
 		getattr(self, 'start_service').setEnabled(True)
 
@@ -170,7 +180,7 @@ class BiometricEasyInstaller(QMainWindow):
 			return 0
 		string = self.textbox_import_start_date.text()
 		formated_date = "".join([ele for ele in reversed(string.split("/"))])
-		
+
 		devices, shifts = self.get_device_details()
 		return '''# ERPNext related configs
 ERPNEXT_API_KEY = '{0}'
@@ -204,16 +214,16 @@ def validate_fields(self):
 		return create_message_box("Missing Value Required", "Please Set ERPNext URL", "warning")
 
 def create_message_box(title, text, icon="information"):
-		msg = QMessageBox()
-		msg.setWindowTitle(title)
-		msg.setText(text)
-		if icon=="warning":
-			msg.setIcon(QtWidgets.QMessageBox.Warning)
-		else:
-			msg.setIcon(QtWidgets.QMessageBox.Information)
-		msg.setStyleSheet("QLabel{min-width: 150px;}")
-		x = msg.exec_()
-		return 0
+	msg = QMessageBox()
+	msg.setWindowTitle(title)
+	msg.setText(text)
+	if icon=="warning":
+		msg.setIcon(QtWidgets.QMessageBox.Warning)
+	else:
+		msg.setIcon(QtWidgets.QMessageBox.Information)
+	msg.setStyleSheet("QLabel{min-width: 150px;}")
+	msg.exec_()
+	return 0
 
 
 
