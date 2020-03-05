@@ -38,11 +38,7 @@ class BiometricEasyInstaller(QMainWindow):
 		self.create_label("Pull Frequency (in minutes)", "pull_frequency", 250, 0, 200, 30)
 		self.create_field("textbox_pull_frequency", 250, 30, 200, 30)
 
-		#validating integer
-		self.onlyInt = QIntValidator(10, 30)
-		self.textbox_pull_frequency.setValidator(self.onlyInt)
-
-		self.create_label("Import Start Date (DD/MM/YYYY)", "import_start_date", 250, 60, 200, 30)
+		self.create_label("Import Start Date", "import_start_date", 250, 60, 200, 30)
 		self.create_field("textbox_import_start_date", 250, 90, 200, 30)
 		self.validate_data(r"^\d{1,2}/\d{1,2}/\d{4}$", "textbox_import_start_date")
 
@@ -63,6 +59,45 @@ class BiometricEasyInstaller(QMainWindow):
 		# Actions buttons
 		self.create_button('Set Configuration', 'set_conf', 20, 500, 130, 30, self.setup_local_config)
 		self.create_button('Start Service', 'start_service', 320, 500, 130, 30, self.integrate_biometric, enable=False)
+
+		self.set_default_value_or_placeholder_of_field()
+
+		#validating integer
+		self.onlyInt = QIntValidator(10, 30)
+		self.textbox_pull_frequency.setValidator(self.onlyInt)
+
+	def set_default_value_or_placeholder_of_field(self):
+		if os.path.exists("local_config.py"):
+			import local_config as config
+			self.textbox_erpnext_api_secret.setText(config.ERPNEXT_API_SECRET)
+			self.textbox_erpnext_api_key.setText(config.ERPNEXT_API_KEY)
+			self.textbox_erpnext_url.setText(config.ERPNEXT_URL)
+			self.textbox_pull_frequency.setText(str(config.PULL_FREQUENCY))
+
+			if len(config.devices):
+				self.device_id_0.setText(config.devices[0]['device_id'])
+				self.device_ip_0.setText(config.devices[0]['ip'])
+				self.shift_0.setText(config.shift_type_device_mapping[0]['shift_type_name'])
+
+
+			if len(config.devices) > 1:
+
+				for i in range(self.counter, len(config.devices)-1):
+					self.add_devices_fields()
+
+					device = getattr(self, 'device_id_' + str(self.counter))
+					ip = getattr(self, 'device_ip_' + str(self.counter))
+					shift = getattr(self, 'shift_' + str(self.counter))
+
+					device.setText(config.devices[self.counter]['device_id'])
+					ip.setText(config.devices[self.counter]['ip'])
+					shift.setText(config.shift_type_device_mapping[self.counter]['shift_type_name'])
+		else:
+			self.textbox_erpnext_api_secret.setPlaceholderText("c70ee57c7b3124c")
+			self.textbox_erpnext_api_key.setPlaceholderText("fb37y8fd4uh8ac")
+			self.textbox_erpnext_url.setPlaceholderText("example.erpnext.com")
+			self.textbox_pull_frequency.setPlaceholderText("60")
+		self.textbox_import_start_date.setPlaceholderText("DD/MM/YYYY")
 
 	# Widgets Genrators
 	def create_label(self, label_text, label_name, x, y, height, width):
@@ -140,17 +175,24 @@ class BiometricEasyInstaller(QMainWindow):
 
 	def setup_local_config(self):
 		print("Setting Local Configuration...")
+
+		f = validate_date(self.textbox_import_start_date.text())
+
+		if not f:
+			print("Local Configuration not updated...")
+			return 0
+
+		bio_config = self.get_local_config()
+		if not bio_config:
+			print("Local Configuration not updated...")
+			return 0
+
 		if os.path.exists("local_config.py"):
 			os.remove("local_config.py")
 
 		local_config_py = open("local_config.py", 'w+')
 
-		config = self.get_local_config()
-		if not config:
-			print("Local Configuration not Updated...")
-			return 0
-
-		local_config_py.write(config)
+		local_config_py.write(bio_config)
 
 		print("Local Configuration Updated.")
 
@@ -205,15 +247,28 @@ devices = {5}
 shift_type_device_mapping = {6}
 '''.format(self.textbox_erpnext_api_key.text(), self.textbox_erpnext_api_secret.text(), self.textbox_erpnext_url.text(), self.textbox_pull_frequency.text(), formated_date, json.dumps(devices), json.dumps(shifts))
 
+
 def validate_fields(self):
 	if not self.textbox_erpnext_api_key.text():
-		return create_message_box("Missing Value Required", "Please Set API Key", "warning")
+		create_message_box("Missing Value Required", "Please Set API Key", "warning")
+		return 0
 	if not self.textbox_erpnext_api_secret.text():
-		return create_message_box("Missing Value Required", "Please Set API Secret", "warning")
+		create_message_box("Missing Value Required", "Please Set API Secret", "warning")
+		return 0
 	if not self.textbox_erpnext_url.text():
-		return create_message_box("Missing Value Required", "Please Set ERPNext URL", "warning")
+		create_message_box("Missing Value Required", "Please Set ERPNext URL", "warning")
+		return 0
 
-def create_message_box(title, text, icon="information"):
+def validate_date(date):
+	import datetime
+	try:
+		datetime.datetime.strptime(date, '%d/%m/%Y')
+		return 1
+	except:
+		create_message_box("", "Please Enter Date in correct format", "warning", width=200)
+		return 0
+
+def create_message_box(title, text, icon="information", width=150):
 	msg = QMessageBox()
 	msg.setWindowTitle(title)
 	msg.setText(text)
@@ -221,7 +276,7 @@ def create_message_box(title, text, icon="information"):
 		msg.setIcon(QtWidgets.QMessageBox.Warning)
 	else:
 		msg.setIcon(QtWidgets.QMessageBox.Information)
-	msg.setStyleSheet("QLabel{min-width: 150px;}")
+	msg.setStyleSheet("QLabel{min-width: "+str(width)+"px;}")
 	msg.exec_()
 	return 0
 
