@@ -1,12 +1,15 @@
+import json
+import multiprocessing
+import os
 import sys
+
 from PyQt5 import QtWidgets
-from PyQt5.QtWidgets import QMainWindow, QApplication, QLineEdit, QPushButton, QLabel, QMessageBox
-from PyQt5.QtGui import QIntValidator, QRegExpValidator
 from PyQt5.QtCore import QRegExp
-import os, json
+from PyQt5.QtGui import QIntValidator, QRegExpValidator
+from PyQt5.QtWidgets import QApplication, QLabel, QLineEdit, QMainWindow, QMessageBox, QPushButton
+
 
 class BiometricEasyInstaller(QMainWindow):
-
 	def __init__(self):
 		super().__init__()
 		self.reg_exp_for_ip = "((25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)(?=\s*netmask)"
@@ -81,8 +84,7 @@ class BiometricEasyInstaller(QMainWindow):
 
 
 			if len(config.devices) > 1:
-
-				for i in range(self.counter, len(config.devices)-1):
+				for _ in range(self.counter, len(config.devices) - 1):
 					self.add_devices_fields()
 
 					device = getattr(self, 'device_id_' + str(self.counter))
@@ -164,13 +166,14 @@ class BiometricEasyInstaller(QMainWindow):
 			b  = getattr(self, "device_ip_" + str(self.counter))
 			b.deleteLater()
 
-			self.counter -=1
+			self.counter -= 1
 
 	def integrate_biometric(self):
 		self.close()
 		print("Starting Service...")
-		start_service_command = 'python -c "from push_to_erpnext import infinite_loop; infinite_loop()"'
-		os.system(start_service_command)
+		from push_to_erpnext import infinite_loop
+		multiprocessing.Process(target=infinite_loop, daemon=True).run()
+
 		create_message_box("Message", "Service Running")
 
 	def setup_local_config(self):
@@ -284,7 +287,7 @@ def create_message_box(title, text, icon="information", width=150):
 
 def main():
 	biometric_app = QApplication(sys.argv)
-	biometric_window = BiometricEasyInstaller()
+	BiometricEasyInstaller()
 	biometric_app.exec_()
 
 if __name__ == "__main__":
