@@ -172,8 +172,9 @@ class BiometricEasyInstaller(QMainWindow):
 		self.close()
 		print("Starting Service...")
 		from push_to_erpnext import infinite_loop
-		multiprocessing.Process(target=infinite_loop, daemon=True).run()
-
+		service = multiprocessing.Process(target=infinite_loop)
+		service.daemon = True
+		service.start()
 		create_message_box("Message", "Service Running")
 
 	def setup_local_config(self):
