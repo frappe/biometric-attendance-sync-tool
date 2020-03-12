@@ -3,6 +3,7 @@ import json
 import multiprocessing
 import os
 import sys
+import subprocess
 
 from PyQt5 import QtWidgets
 from PyQt5.QtCore import QRegExp
@@ -87,7 +88,7 @@ class BiometricEasyInstaller(QMainWindow):
 
         # Actions buttons
         self.create_button('Set Configuration', 'set_conf', 20, 500, 130, 30, self.setup_local_config)
-        self.create_button('Start Service', 'start_service', 320, 500, 130, 30, self.integrate_biometric, enable=False)
+        self.create_button('Start Service', 'start_or_stop_service', 320, 500, 130, 30, self.integrate_biometric, enable=False)
 
         self.set_default_value_or_placeholder_of_field()
 
@@ -194,11 +195,20 @@ class BiometricEasyInstaller(QMainWindow):
             self.counter -= 1
 
     def integrate_biometric(self):
-        self.close()
-        print("Starting Service...")
-        from push_to_erpnext import infinite_loop
-        multiprocessing.Process(target=infinite_loop).start()
-        create_message_box("Message", "Service Running")
+        button = getattr(self, "start_or_stop_service")
+
+        if not hasattr(self, 'p'):
+            print("Starting Service...")
+            self.p = subprocess.Popen('python -c "from push_to_erpnext import infinite_loop; infinite_loop()"', stdout=subprocess.PIPE)
+            print("Process running at {}".format(self.p.pid))
+            button.setText("Stop Service")
+            create_message_box("Service status", "Service has been started")
+        else:
+            print("Stopping Service...")
+            self.p.terminate()
+            del self.p
+            button.setText("Start Service")
+            create_message_box("Service status", "Service has been stoped")
 
     def setup_local_config(self):
         bio_config = self.get_local_config()
@@ -219,7 +229,7 @@ class BiometricEasyInstaller(QMainWindow):
 
         create_message_box("Message", "Configuration Updated.\n\nClick on Start Service.")
 
-        getattr(self, 'start_service').setEnabled(True)
+        getattr(self, 'start_or_stop_service').setEnabled(True)
 
     def get_device_details(self):
         device = []
