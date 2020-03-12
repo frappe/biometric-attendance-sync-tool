@@ -41,6 +41,14 @@ class BiometricEasyInstaller(QMainWindow):
         self.reg_exp_for_ip = r"((25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)(?=\s*netmask)"
         self.init_ui()
 
+    def closeEvent(self, event):
+        can_exit = not hasattr(self, "p")
+        if can_exit:
+            event.accept()
+        else:
+            create_message_box(text="Window cannot be closed when \nservice is running!", title="Message", width=200)
+            event.ignore()
+
     def init_ui(self):
         self.counter = 0
         self.setup_window()
@@ -227,7 +235,7 @@ class BiometricEasyInstaller(QMainWindow):
 
         print("Local Configuration Updated.")
 
-        create_message_box("Message", "Configuration Updated.\n\nClick on Start Service.")
+        create_message_box("Message", "Configuration Updated!\nClick on Start Service.")
 
         getattr(self, 'start_or_stop_service').setEnabled(True)
 
@@ -264,7 +272,7 @@ class BiometricEasyInstaller(QMainWindow):
 
 def validate_fields(self):
     def message(text):
-        create_message_box("Missing Value Required", "Please Set {}".format(text), "warning")
+        create_message_box("Missing Value", "Please Set {}".format(text), "warning")
 
     if not self.textbox_erpnext_api_key.text():
         return message("API Key")
@@ -296,9 +304,11 @@ def create_message_box(title, text, icon="information", width=150):
     msg.setText(text)
     if icon == "warning":
         msg.setIcon(QtWidgets.QMessageBox.Warning)
+        msg.setStyleSheet("QMessageBox Warning{min-width: 50 px;}")
     else:
         msg.setIcon(QtWidgets.QMessageBox.Information)
-    msg.setStyleSheet("QLabel{min-width: "+str(width)+"px;}")
+        msg.setStyleSheet("QMessageBox Information{min-width: 50 px;}")
+    msg.setStyleSheet("QmessageBox QLabel{min-width: "+str(width)+"px;}")
     msg.exec_()
 
 
