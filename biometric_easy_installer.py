@@ -1,6 +1,5 @@
 import datetime
 import json
-import multiprocessing
 import os
 import sys
 import subprocess
@@ -293,7 +292,7 @@ def validate_date(date):
     try:
         datetime.datetime.strptime(date, '%d/%m/%Y')
         return True
-    except:
+    except ValueError:
         create_message_box("", "Please Enter Date in correct format", "warning", width=200)
         return False
 
