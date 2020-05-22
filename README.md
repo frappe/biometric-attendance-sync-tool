@@ -12,6 +12,7 @@ Python Scripts to poll your biometric attendance system _(BAS)_ for logs and syn
     - [UNIX](#unix)
     - [Windows](#windows)
   - [Setting Up Config](#setting-up-config)
+  - [Resources](#resources)
   - [License](#license)
 
 
@@ -92,6 +93,11 @@ Installing as a Windows service
 
 > TODO: fill this section with more info to help Non-Technical Individuals.
 
+
+### Resources
+
+* Article on [ERPNext Documentation](https://docs.erpnext.com/docs/user/manual/en/setting-up/articles/integrating-erpnext-with-biometric-attendance-devices).
+* This Repo's [/Wiki](https://github.com/frappe/biometric-attendance-sync-tool/wiki).
 
 ### License
 
