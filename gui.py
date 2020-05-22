@@ -34,7 +34,7 @@ shift_type_device_mapping = {6}
 '''
 
 
-class BiometricEasyInstaller(QMainWindow):
+class BiometricWindow(QMainWindow):
     def __init__(self):
         super().__init__()
         self.reg_exp_for_ip = r"((25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)(?=\s*netmask)"
@@ -206,7 +206,7 @@ class BiometricEasyInstaller(QMainWindow):
 
         if not hasattr(self, 'p'):
             print("Starting Service...")
-            self.p = subprocess.Popen('python -c "from push_to_erpnext import infinite_loop; infinite_loop()"', stdout=subprocess.PIPE)
+            self.p = subprocess.Popen('python -c "from erpnext_sync import infinite_loop; infinite_loop()"', stdout=subprocess.PIPE)
             print("Process running at {}".format(self.p.pid))
             button.setText("Stop Service")
             create_message_box("Service status", "Service has been started")
@@ -311,11 +311,11 @@ def create_message_box(title, text, icon="information", width=150):
     msg.exec_()
 
 
-def main():
+def setup_window():
     biometric_app = QApplication(sys.argv)
-    biometric_window = BiometricEasyInstaller()
+    biometric_window = BiometricWindow()
     biometric_app.exec_()
 
 
 if __name__ == "__main__":
-    main()
+    setup_window()
