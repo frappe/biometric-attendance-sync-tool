@@ -1,7 +1,7 @@
 import time
 from pathlib import Path
 from SMWinservice import SMWinservice
-from push_to_erpnext import main
+from erpnext_sync import main
 
 class PythonCornerExample(SMWinservice):
     _svc_name_ = "ERPNextBiometricPushService"
