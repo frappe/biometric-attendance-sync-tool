@@ -214,7 +214,7 @@ class BiometricWindow(QMainWindow):
             create_message_box("Service status", "Service has been started")
         else:
             print("Stopping Service...")
-            self.p.terminate()
+            self.p.kill()
             del self.p
             button.setText("Start Service")
             create_message_box("Service status", "Service has been stoped")
