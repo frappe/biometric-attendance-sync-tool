@@ -307,8 +307,11 @@ status = pickledb.load('/'.join([config.LOGS_DIRECTORY, 'status.json']), True)
 def infinite_loop(sleep_time=15):
     print("Service Running...")
     while True:
-        main()
-        time.sleep(sleep_time)
+        try:
+            main()
+            time.sleep(sleep_time)
+        except BaseException as e:
+            print(e)
 
 if __name__ == "__main__":
     infinite_loop()

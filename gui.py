@@ -1,6 +1,7 @@
 import datetime
 import json
 import os
+import shlex
 import sys
 import subprocess
 
@@ -206,13 +207,14 @@ class BiometricWindow(QMainWindow):
 
         if not hasattr(self, 'p'):
             print("Starting Service...")
-            self.p = subprocess.Popen('python -c "from erpnext_sync import infinite_loop; infinite_loop()"', stdout=subprocess.PIPE)
+            command = shlex.split('python -c "from erpnext_sync import infinite_loop; infinite_loop()"')
+            self.p = subprocess.Popen(command, stdout=subprocess.PIPE)
             print("Process running at {}".format(self.p.pid))
             button.setText("Stop Service")
             create_message_box("Service status", "Service has been started")
         else:
             print("Stopping Service...")
-            self.p.terminate()
+            self.p.kill()
             del self.p
             button.setText("Start Service")
             create_message_box("Service status", "Service has been stoped")
