@@ -241,24 +241,29 @@ class BiometricWindow(QMainWindow):
         getattr(self, 'start_or_stop_service').setEnabled(True)
 
     def get_device_details(self):
-        device = []
+        device = {}
         devices = []
         shifts = []
 
         for idx in range(0, self.counter+1):
+            shift = getattr(self, "shift_" + str(idx)).text()
+            device_id = getattr(self, "device_id_" + str(idx)).text()
             devices.append({
-                'device_id': getattr(self, "device_id_" + str(idx)).text(),
+                'device_id': device_id,
                 'ip': getattr(self, "device_ip_" + str(idx)).text(),
                 'punch_direction': '',
                 'clear_from_device_on_fetch': ''
             })
-
-            device.append(getattr(self, "device_id_" + str(idx)).text())
+            if shift in device:
+                device[shift].append(device_id)
+            else:
+                device[shift]=[device_id]
+        
+        for shift_type_name in device.keys():
             shifts.append({
-                'shift_type_name': getattr(self, "shift_" + str(idx)).text(),
-                'related_device_id': device
+                'shift_type_name': shift_type_name,
+                'related_device_id': device[shift_type_name]
             })
-
         return devices, shifts
 
     def get_local_config(self):
