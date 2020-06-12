@@ -93,10 +93,10 @@ Installing as a Windows service
 
 > TODO: fill this section with more info to help Non-Technical Individuals.
 
-## Creating Executable File for GUI
+## To create executable file for GUI
 ### Linux:
-1. Activate virtual environment
-1. Inside the root folder run the following   commands:
+1. Activate virtual environment.
+1. Inside the root folder run the following commands:
     ```
     pip install pyinstaller
     ```
@@ -104,7 +104,7 @@ Installing as a Windows service
     ```
     python -m PyInstaller --name="attendance-sync-linux" --windowed --onefile gui.py
     ```
-1. The `attendance-sync-linux` executable file created inside `dist/` folder.
+1. The executable file `attendance-sync-linux` created inside `dist/` folder.
 
 ### Resources
 
