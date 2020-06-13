@@ -93,18 +93,22 @@ Installing as a Windows service
 
 > TODO: fill this section with more info to help Non-Technical Individuals.
 
-## To create executable file for GUI
-### Linux:
+## To build executable file for GUI
+### Linux and Windows:
 1. Activate virtual environment.
-1. Inside the root folder run the following commands:
+1. Navigate to the repository folder (where `gui.py` located) by
+    ```
+    cd biometric-attendance-sync-tool
+    ```
+1. Run the following commands:
     ```
     pip install pyinstaller
     ```
 
     ```
-    python -m PyInstaller --name="attendance-sync-linux" --windowed --onefile gui.py
+    python -m PyInstaller --name="attendance-sync" --windowed --onefile gui.py
     ```
-1. The executable file `attendance-sync-linux` created inside `dist/` folder.
+1. The executable file `attendance-sync` created inside `dist/` folder.
 
 ### Resources
 
