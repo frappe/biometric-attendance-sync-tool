@@ -4,7 +4,9 @@ import os
 import shlex
 import sys
 import subprocess
+import local_config as config
 
+from PyQt5 import QtCore
 from PyQt5 import QtWidgets
 from PyQt5.QtCore import QRegExp
 from PyQt5.QtGui import QIntValidator, QRegExpValidator
@@ -97,7 +99,7 @@ class BiometricWindow(QMainWindow):
         # Actions buttons
         self.create_button('Set Configuration', 'set_conf', 20, 500, 130, 30, self.setup_local_config)
         self.create_button('Start Service', 'start_or_stop_service', 320, 500, 130, 30, self.integrate_biometric, enable=False)
-
+        self.create_button('Running Status', 'running_status', 170, 500, 130, 30, self.get_running_status, enable=False)
         self.set_default_value_or_placeholder_of_field()
 
         # validating integer
@@ -212,12 +214,16 @@ class BiometricWindow(QMainWindow):
             print("Process running at {}".format(self.p.pid))
             button.setText("Stop Service")
             create_message_box("Service status", "Service has been started")
+            self.create_label(str(datetime.datetime.now()), "service_start_time", 20, 60, 200, 30)
+            self.service_start_time.setHidden(True)
+            getattr(self, 'running_status').setEnabled(True)
         else:
             print("Stopping Service...")
             self.p.kill()
             del self.p
             button.setText("Start Service")
             create_message_box("Service status", "Service has been stoped")
+            getattr(self, 'running_status').setEnabled(False)
 
     def setup_local_config(self):
         bio_config = self.get_local_config()
@@ -270,6 +276,27 @@ class BiometricWindow(QMainWindow):
         devices, shifts = self.get_device_details()
         return config_template.format(self.textbox_erpnext_api_key.text(), self.textbox_erpnext_api_secret.text(), self.textbox_erpnext_url.text(), self.textbox_pull_frequency.text(), formated_date, json.dumps(devices), json.dumps(shifts))
 
+    def get_running_status(self):
+        running_status = []
+        found = False
+        with open('/'.join([config.LOGS_DIRECTORY])+'/logs.log', 'r') as f:
+            for line in f:
+                logdate = datetime.datetime.strptime(line.split(',')[0], '%Y-%m-%d %H:%M:%S')
+                if logdate >= datetime.datetime.strptime(self.service_start_time.text().split('.')[0] , '%Y-%m-%d %H:%M:%S'):
+                    running_status.append(line)
+        with open('/'.join([config.LOGS_DIRECTORY])+'/error.log', 'r') as f:
+            for line in f:
+                start_date = datetime.datetime.strptime(self.service_start_time.text().split('.')[0] , '%Y-%m-%d %H:%M:%S')
+                if start_date.strftime('%Y-%m-%d') in line:
+                    logdate = datetime.datetime.strptime(line.split(',')[0], '%Y-%m-%d %H:%M:%S')
+                    if logdate >= start_date:
+                        found = True
+                if found:
+                    running_status.append(line)
+        if running_status:
+            create_message_box("Running status", ''.join(running_status))
+        else:
+            create_message_box("Running status", 'Process not yet started')
 
 def validate_fields(self):
     def message(text):
@@ -302,14 +329,27 @@ def validate_date(date):
 def create_message_box(title, text, icon="information", width=150):
     msg = QMessageBox()
     msg.setWindowTitle(title)
-    msg.setText(text)
-    if icon == "warning":
-        msg.setIcon(QtWidgets.QMessageBox.Warning)
-        msg.setStyleSheet("QMessageBox Warning{min-width: 50 px;}")
+    lineCnt = len(text.split('\n'))
+    if lineCnt > 15:
+        scroll = QtWidgets.QScrollArea()
+        scroll.setWidgetResizable(1)
+        content = QtWidgets.QWidget()
+        scroll.setWidget(content)
+        layout = QtWidgets.QVBoxLayout(content)
+        tmpLabel = QtWidgets.QLabel(text)
+        tmpLabel.setTextInteractionFlags(QtCore.Qt.TextSelectableByMouse)
+        layout.addWidget(tmpLabel)
+        msg.layout().addWidget(scroll, 12, 10, 1, msg.layout().columnCount())
+        msg.setStyleSheet("QScrollArea{min-width:550 px; min-height: 400px}")
     else:
-        msg.setIcon(QtWidgets.QMessageBox.Information)
-        msg.setStyleSheet("QMessageBox Information{min-width: 50 px;}")
-    msg.setStyleSheet("QmessageBox QLabel{min-width: "+str(width)+"px;}")
+        msg.setText(text)
+        if icon == "warning":
+            msg.setIcon(QtWidgets.QMessageBox.Warning)
+            msg.setStyleSheet("QMessageBox Warning{min-width: 50 px;}")
+        else:
+            msg.setIcon(QtWidgets.QMessageBox.Information)
+            msg.setStyleSheet("QMessageBox Information{min-width: 50 px;}")
+        msg.setStyleSheet("QmessageBox QLabel{min-width: "+str(width)+"px;}")
     msg.exec_()
 
 
