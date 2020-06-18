@@ -286,14 +286,14 @@ class BiometricWindow(QMainWindow):
         found = False
         with open('/'.join([config.LOGS_DIRECTORY])+'/logs.log', 'r') as f:
             for line in f:
-                logdate = datetime.datetime.strptime(line.split(',')[0], '%Y-%m-%d %H:%M:%S')
-                if logdate >= datetime.datetime.strptime(self.service_start_time.text().split('.')[0] , '%Y-%m-%d %H:%M:%S'):
+                logdate = convert_into_date(line.split(',')[0], '%Y-%m-%d %H:%M:%S')
+                if logdate >= convert_into_date(self.service_start_time.text().split('.')[0] , '%Y-%m-%d %H:%M:%S'):
                     running_status.append(line)
         with open('/'.join([config.LOGS_DIRECTORY])+'/error.log', 'r') as f:
             for line in f:
-                start_date = datetime.datetime.strptime(self.service_start_time.text().split('.')[0] , '%Y-%m-%d %H:%M:%S')
+                start_date = convert_into_date(self.service_start_time.text().split('.')[0] , '%Y-%m-%d %H:%M:%S')
                 if start_date.strftime('%Y-%m-%d') in line:
-                    logdate = datetime.datetime.strptime(line.split(',')[0], '%Y-%m-%d %H:%M:%S')
+                    logdate = convert_into_date(line.split(',')[0], '%Y-%m-%d %H:%M:%S')
                     if logdate >= start_date:
                         found = True
                 if found:
@@ -329,6 +329,13 @@ def validate_date(date):
     except ValueError:
         create_message_box("", "Please Enter Date in correct format", "warning", width=200)
         return False
+
+
+def convert_into_date(datestring, pattern):
+    try:
+        return datetime.datetime.strptime(datestring, pattern)
+    except:
+        return None
 
 
 def create_message_box(title, text, icon="information", width=150):
