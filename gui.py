@@ -283,25 +283,41 @@ class BiometricWindow(QMainWindow):
 
     def get_running_status(self):
         running_status = []
-        found = False
         with open('/'.join([config.LOGS_DIRECTORY])+'/logs.log', 'r') as f:
-            for line in f:
+            index = 0
+            for idx, line in enumerate(f,1):
                 logdate = convert_into_date(line.split(',')[0], '%Y-%m-%d %H:%M:%S')
-                if logdate >= convert_into_date(self.service_start_time.text().split('.')[0] , '%Y-%m-%d %H:%M:%S'):
-                    running_status.append(line)
-        with open('/'.join([config.LOGS_DIRECTORY])+'/error.log', 'r') as f:
-            for line in f:
+                if logdate and logdate >= convert_into_date(self.service_start_time.text().split('.')[0] , '%Y-%m-%d %H:%M:%S'):
+                    index = idx
+                    break
+            if index:
+                running_status.extend(read_file_contents('logs',index))
+
+        with open('/'.join([config.LOGS_DIRECTORY])+'/error.log', 'r') as fread:
+            error_index = 0
+            for error_idx, error_line in enumerate(fread,1):
                 start_date = convert_into_date(self.service_start_time.text().split('.')[0] , '%Y-%m-%d %H:%M:%S')
-                if start_date.strftime('%Y-%m-%d') in line:
-                    logdate = convert_into_date(line.split(',')[0], '%Y-%m-%d %H:%M:%S')
-                    if logdate >= start_date:
-                        found = True
-                if found:
-                    running_status.append(line)
+                if start_date and start_date.strftime('%Y-%m-%d') in error_line:
+                    error_logdate = convert_into_date(error_line.split(',')[0], '%Y-%m-%d %H:%M:%S')
+                    if error_logdate and error_logdate >= start_date:
+                        error_index = error_idx
+                        break
+            if error_index:
+                running_status.extend(read_file_contents('error',error_index))
+
         if running_status:
             create_message_box("Running status", ''.join(running_status))
         else:
             create_message_box("Running status", 'Process not yet started')
+
+def read_file_contents(file_name, index):
+    running_status = []
+    with open('/'.join([config.LOGS_DIRECTORY])+f'/{file_name}.log', 'r') as file_handler:
+        for idx, line in enumerate(file_handler,1):
+            if idx>=index:
+                running_status.append(line)
+    return running_status
+
 
 def validate_fields(self):
     def message(text):
