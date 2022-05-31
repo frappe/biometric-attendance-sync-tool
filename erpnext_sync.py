@@ -11,7 +11,17 @@ from logging.handlers import RotatingFileHandler
 import pickledb
 from zk import ZK, const
 
-EMPLOYEE_NOT_FOUND_ERROR_MESSAGE = "No Employee found for the given employee field value."
+EMPLOYEE_NOT_FOUND_ERROR_MESSAGE = "No Employee found for the given employee field value"
+EMPLOYEE_INACTIVE_ERROR_MESSAGE = "Transactions cannot be created for an Inactive Employee"
+DUPLICATE_EMPLOYEE_CHECKIN_ERROR_MESSAGE = "This employee already has a log with the same timestamp"
+allowlisted_errors = [EMPLOYEE_NOT_FOUND_ERROR_MESSAGE, EMPLOYEE_INACTIVE_ERROR_MESSAGE, DUPLICATE_EMPLOYEE_CHECKIN_ERROR_MESSAGE]
+
+if hasattr(config,'allowed_exceptions'):
+    allowlisted_errors_temp = []
+    for error_number in config.allowed_exceptions:
+        allowlisted_errors.append(allowlisted_errors[error_number-1])
+    allowlisted_errors = allowlisted_errors_temp
+
 device_punch_values_IN = getattr(config, 'device_punch_values_IN', [0,4])
 device_punch_values_OUT = getattr(config, 'device_punch_values_OUT', [1,5])
 
@@ -125,7 +135,7 @@ def pull_process_and_push_data(device, device_attendance_logs=None):
                 str(device_attendance_log['user_id']), str(device_attendance_log['timestamp'].timestamp()),
                 str(device_attendance_log['punch']), str(device_attendance_log['status']),
                 json.dumps(device_attendance_log, default=str)]))
-            if EMPLOYEE_NOT_FOUND_ERROR_MESSAGE not in erpnext_message:
+            if not(any(error in erpnext_message for error in allowlisted_errors)):
                 raise Exception('API Call to ERPNext Failed.')
 
 
