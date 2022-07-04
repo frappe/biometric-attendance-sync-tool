@@ -11,7 +11,17 @@ from logging.handlers import RotatingFileHandler
 import pickledb
 from zk import ZK, const
 
-EMPLOYEE_NOT_FOUND_ERROR_MESSAGE = "No Employee found for the given employee field value."
+EMPLOYEE_NOT_FOUND_ERROR_MESSAGE = "No Employee found for the given employee field value"
+EMPLOYEE_INACTIVE_ERROR_MESSAGE = "Transactions cannot be created for an Inactive Employee"
+DUPLICATE_EMPLOYEE_CHECKIN_ERROR_MESSAGE = "This employee already has a log with the same timestamp"
+allowlisted_errors = [EMPLOYEE_NOT_FOUND_ERROR_MESSAGE, EMPLOYEE_INACTIVE_ERROR_MESSAGE, DUPLICATE_EMPLOYEE_CHECKIN_ERROR_MESSAGE]
+
+if hasattr(config,'allowed_exceptions'):
+    allowlisted_errors_temp = []
+    for error_number in config.allowed_exceptions:
+        allowlisted_errors_temp.append(allowlisted_errors[error_number-1])
+    allowlisted_errors = allowlisted_errors_temp
+
 device_punch_values_IN = getattr(config, 'device_punch_values_IN', [0,4])
 device_punch_values_OUT = getattr(config, 'device_punch_values_OUT', [1,5])
 
@@ -40,7 +50,7 @@ def main():
             for device in config.devices:
                 device_attendance_logs = None
                 info_logger.info("Processing Device: "+ device['device_id'])
-                dump_file = config.LOGS_DIRECTORY+'/'+device['ip'].replace('.', '_')+'_last_fetch_dump.json'
+                dump_file = get_dump_file_name_and_directory(device['device_id'], device['ip'])
                 if os.path.exists(dump_file):
                     info_logger.error('Device Attendance Dump Found in Log Directory. This can mean the program crashed unexpectedly. Retrying with dumped data.')
                     with open(dump_file, 'r') as f:
@@ -125,7 +135,7 @@ def pull_process_and_push_data(device, device_attendance_logs=None):
                 str(device_attendance_log['user_id']), str(device_attendance_log['timestamp'].timestamp()),
                 str(device_attendance_log['punch']), str(device_attendance_log['status']),
                 json.dumps(device_attendance_log, default=str)]))
-            if EMPLOYEE_NOT_FOUND_ERROR_MESSAGE not in erpnext_message:
+            if not(any(error in erpnext_message for error in allowlisted_errors)):
                 raise Exception('API Call to ERPNext Failed.')
 
 
@@ -146,7 +156,7 @@ def get_all_attendance_from_device(ip, port=4370, timeout=30, device_id=None, cl
         if len(attendances):
             # keeping a backup before clearing data incase the programs fails.
             # if everything goes well then this file is removed automatically at the end.
-            dump_file_name = config.LOGS_DIRECTORY+'/' + device_id + "_" + ip.replace('.', '_') + '_last_fetch_dump.json'
+            dump_file_name = get_dump_file_name_and_directory(device_id, ip)
             with open(dump_file_name, 'w+') as f:
                 f.write(json.dumps(list(map(lambda x: x.__dict__, attendances)), default=datetime.datetime.timestamp))
             if clear_from_device_on_fetch:
@@ -275,6 +285,9 @@ def setup_logger(name, log_file, level=logging.INFO, formatter=None):
         logger.addHandler(handler)
 
     return logger
+
+def get_dump_file_name_and_directory(device_id, device_ip):
+    return config.LOGS_DIRECTORY + '/' + device_id + "_" + device_ip.replace('.', '_') + '_last_fetch_dump.json'
 
 def _apply_function_to_key(obj, key, fn):
     obj[key] = fn(obj[key])
