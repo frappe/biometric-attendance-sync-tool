@@ -177,7 +177,8 @@ def send_to_erpnext(employee_field_value, timestamp, device_id=None, log_type=No
     """
     Example: send_to_erpnext('12349',datetime.datetime.now(),'HO1','IN')
     """
-    url = config.ERPNEXT_URL + "/api/method/erpnext.hr.doctype.employee_checkin.employee_checkin.add_log_based_on_employee_field"
+    endpoint_app = "hrms" if config.ERPNEXT_VERSION > 13 else "erpnext"
+    url = f"{config.ERPNEXT_URL}/api/method/{endpoint_app}.hr.doctype.employee_checkin.employee_checkin.add_log_based_on_employee_field"
     headers = {
         'Authorization': "token "+ config.ERPNEXT_API_KEY + ":" + config.ERPNEXT_API_SECRET,
         'Accept': 'application/json'
