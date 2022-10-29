@@ -84,6 +84,7 @@ Installing as a Windows service
       > 2. Write Permissions for 'Shift Type' DocType.
 
     - `ERPNEXT_URL`: The web address at which you would access your ERPNext. eg:`'https://yourcompany.erpnext.com'`, `'https://erp.yourcompany.com'`
+    - `ERPNEXT_VERSION`: The base version of your ERPNext app. eg: 12, 13, 14
   - This script's operational configs:
     - `PULL_FREQUENCY`: The time in minutes after which a pull for punches from the biometric device and push to ERPNext is attempted again.
     - `LOGS_DIRECTORY`: The Directory in which the logs related to this script's whereabouts are stored.
