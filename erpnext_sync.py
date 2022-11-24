@@ -146,7 +146,7 @@ def get_all_attendance_from_device(ip, port=4370, timeout=30, device_id=None, cl
     '''
     The default parameters -> ZK(ip, port=4370, timeout, password=0, force_udp=False, ommit_ping=False)
 
-    We can modify these paramters, if zk throws some device connection error 
+    We can modify these parameters, if zk package throws device connection error 
 
     For further reference: https://github.com/fananimi/pyzk#readme
     '''
