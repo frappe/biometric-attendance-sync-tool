@@ -5,6 +5,7 @@ import datetime
 import json
 import os
 import sys
+import signal
 import logging
 from logging.handlers import RotatingFileHandler
 import pickledb
