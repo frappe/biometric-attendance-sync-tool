@@ -16,10 +16,11 @@ IMPORT_START_DATE = None # format: '20190501'
     #- ip - device IP Address
     #- punch_direction - 'IN'/'OUT'/'AUTO'/None
     #- clear_from_device_on_fetch: if set to true then attendance is deleted after fetch is successful.
-                                    #(Caution: this feature can lead to data loss if used carelessly.)
+    #(Caution: this feature can lead to data loss if used carelessly.)
+    #- live_sync - whether or not checkin should be fetch 
 devices = [
-    {'device_id':'test_1','ip':'192.168.0.209', 'punch_direction': None, 'clear_from_device_on_fetch': False},
-    {'device_id':'test_2','ip':'192.168.2.209', 'punch_direction': None, 'clear_from_device_on_fetch': False}
+    {'device_id':'test_1','ip':'192.168.0.209', 'punch_direction': None, 'clear_from_device_on_fetch': False, 'live_sync': True},
+    {'device_id':'test_2','ip':'192.168.2.209', 'punch_direction': None, 'clear_from_device_on_fetch': False, 'live_sync': False}
 ]
 
 # Configs updating sync timestamp in the Shift Type DocType 
