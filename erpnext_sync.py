@@ -182,8 +182,7 @@ def send_to_erpnext(employee_field_value, timestamp, device_id=None, log_type=No
     url = f"{config.ERPNEXT_URL}/api/method/{endpoint_app}.hr.doctype.employee_checkin.employee_checkin.add_log_based_on_employee_field"
     headers = {
         'Authorization': "token "+ config.ERPNEXT_API_KEY + ":" + config.ERPNEXT_API_SECRET,
-        'Accept': 'application/json',
-        'Content-Type': 'application/json'
+        'Accept': 'application/json'
     }
     data = {
         'employee_field_value' : employee_field_value,
