@@ -182,7 +182,8 @@ def send_to_erpnext(employee_field_value, timestamp, device_id=None, log_type=No
     url = f"{config.ERPNEXT_URL}/api/method/{endpoint_app}.hr.doctype.employee_checkin.employee_checkin.add_log_based_on_employee_field"
     headers = {
         'Authorization': "token "+ config.ERPNEXT_API_KEY + ":" + config.ERPNEXT_API_SECRET,
-        'Accept': 'application/json'
+        'Accept': 'application/json',
+        'Content-Type': 'application/json'
     }
     data = {
         'employee_field_value' : employee_field_value,
@@ -190,7 +191,7 @@ def send_to_erpnext(employee_field_value, timestamp, device_id=None, log_type=No
         'device_id' : device_id,
         'log_type' : log_type
     }
-    response = requests.request("POST", url, headers=headers, data=data)
+    response = requests.request("POST", url, headers=headers, json=data)
     if response.status_code == 200:
         return 200, json.loads(response._content)['message']['name']
     else:
