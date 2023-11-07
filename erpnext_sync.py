@@ -190,7 +190,7 @@ def send_to_erpnext(employee_field_value, timestamp, device_id=None, log_type=No
         'device_id' : device_id,
         'log_type' : log_type
     }
-    response = requests.request("POST", url, headers=headers, data=data)
+    response = requests.request("POST", url, headers=headers, json=data)
     if response.status_code == 200:
         return 200, json.loads(response._content)['message']['name']
     else:
