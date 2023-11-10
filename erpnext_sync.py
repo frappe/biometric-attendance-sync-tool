@@ -5,11 +5,15 @@ import datetime
 import json
 import os
 import sys
-import time
+import signal
 import logging
 from logging.handlers import RotatingFileHandler
 import pickledb
 from zk import ZK, const
+
+from threading import Event
+
+exit = Event()
 
 EMPLOYEE_NOT_FOUND_ERROR_MESSAGE = "No Employee found for the given employee field value"
 EMPLOYEE_INACTIVE_ERROR_MESSAGE = "Transactions cannot be created for an Inactive Employee"
@@ -321,12 +325,19 @@ status = pickledb.load('/'.join([config.LOGS_DIRECTORY, 'status.json']), True)
 
 def infinite_loop(sleep_time=15):
     print("Service Running...")
-    while True:
+    while not exit.is_set():
         try:
             main()
-            time.sleep(sleep_time)
+            exit.wait(sleep_time)
         except BaseException as e:
             print(e)
 
+def quit(signo, _frame):
+    print("Interrupted by %d, shutting down" % signo)
+    exit.set()
+
 if __name__ == "__main__":
+    # https://stackoverflow.com/a/46346184
+    for sig in ('TERM', 'HUP', 'INT'):
+        signal.signal(getattr(signal, 'SIG'+sig), quit)
     infinite_loop()
