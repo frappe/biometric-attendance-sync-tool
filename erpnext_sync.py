@@ -24,7 +24,7 @@ if hasattr(config,'allowed_exceptions'):
 
 device_punch_values_IN = getattr(config, 'device_punch_values_IN', [0,4])
 device_punch_values_OUT = getattr(config, 'device_punch_values_OUT', [1,5])
-ERPNEXT_VERSION = getattr(config, 'ERPNEXT_VERSION', 13)
+ERPNEXT_VERSION = getattr(config, 'ERPNEXT_VERSION', 14)
 
 # possible area of further developemt
     # Real-time events - setup getting events pushed from the machine rather then polling.
