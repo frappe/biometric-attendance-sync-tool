@@ -47,6 +47,7 @@ def main():
         last_lift_off_timestamp = _safe_convert_date(status.get('lift_off_timestamp'), "%Y-%m-%d %H:%M:%S.%f")
         if (last_lift_off_timestamp and last_lift_off_timestamp < datetime.datetime.now() - datetime.timedelta(minutes=config.PULL_FREQUENCY)) or not last_lift_off_timestamp:
             status.set('lift_off_timestamp', str(datetime.datetime.now()))
+            status.save()
             info_logger.info("Cleared for lift off!")
             for device in config.devices:
                 device_attendance_logs = None
@@ -61,6 +62,7 @@ def main():
                 try:
                     pull_process_and_push_data(device, device_attendance_logs)
                     status.set(f'{device["device_id"]}_push_timestamp', str(datetime.datetime.now()))
+                    status.save()
                     if os.path.exists(dump_file):
                         os.remove(dump_file)
                     info_logger.info("Successfully processed Device: "+ device['device_id'])
@@ -155,6 +157,7 @@ def get_all_attendance_from_device(ip, port=4370, timeout=30, device_id=None, cl
         info_logger.info("\t".join((ip, "Attendances Fetched:", str(len(attendances)))))
         status.set(f'{device_id}_push_timestamp', None)
         status.set(f'{device_id}_pull_timestamp', str(datetime.datetime.now()))
+        status.save()
         if len(attendances):
             # keeping a backup before clearing data incase the programs fails.
             # if everything goes well then this file is removed automatically at the end.
@@ -231,6 +234,7 @@ def update_shift_last_sync_timestamp(shift_type_device_mapping):
                         response_code = send_shift_sync_to_erpnext(shift, min_pull_timestamp)
                         if response_code == 200:
                             status.set(f'{shift}_sync_timestamp', str(min_pull_timestamp))
+                            status.save()
                 except:
                     error_logger.exception('Exception in update_shift_last_sync_timestamp, for shift:'+shift)
 
