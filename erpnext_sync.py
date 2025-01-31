@@ -8,7 +8,7 @@ import sys
 import time
 import logging
 from logging.handlers import RotatingFileHandler
-import pickledb
+from pickledb import PickleDB
 from zk import ZK, const
 
 EMPLOYEE_NOT_FOUND_ERROR_MESSAGE = "No Employee found for the given employee field value"
@@ -69,6 +69,7 @@ def main():
             if hasattr(config,'shift_type_device_mapping'):
                 update_shift_last_sync_timestamp(config.shift_type_device_mapping)
             status.set('mission_accomplished_timestamp', str(datetime.datetime.now()))
+            status.save()
             info_logger.info("Mission Accomplished!")
     except:
         error_logger.exception('exception has occurred in the main function...')
@@ -317,7 +318,7 @@ if not os.path.exists(config.LOGS_DIRECTORY):
     os.makedirs(config.LOGS_DIRECTORY)
 error_logger = setup_logger('error_logger', '/'.join([config.LOGS_DIRECTORY, 'error.log']), logging.ERROR)
 info_logger = setup_logger('info_logger', '/'.join([config.LOGS_DIRECTORY, 'logs.log']))
-status = pickledb.load('/'.join([config.LOGS_DIRECTORY, 'status.json']), True)
+status = PickleDB('/'.join([config.LOGS_DIRECTORY, 'status.json']))
 
 def infinite_loop(sleep_time=15):
     print("Service Running...")
