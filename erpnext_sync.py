@@ -8,7 +8,7 @@ import sys
 import time
 import logging
 from logging.handlers import RotatingFileHandler
-import pickledb
+from pickledb import PickleDB
 from zk import ZK, const
 
 EMPLOYEE_NOT_FOUND_ERROR_MESSAGE = "No Employee found for the given employee field value"
@@ -47,6 +47,7 @@ def main():
         last_lift_off_timestamp = _safe_convert_date(status.get('lift_off_timestamp'), "%Y-%m-%d %H:%M:%S.%f")
         if (last_lift_off_timestamp and last_lift_off_timestamp < datetime.datetime.now() - datetime.timedelta(minutes=config.PULL_FREQUENCY)) or not last_lift_off_timestamp:
             status.set('lift_off_timestamp', str(datetime.datetime.now()))
+            status.save()
             info_logger.info("Cleared for lift off!")
             for device in config.devices:
                 device_attendance_logs = None
@@ -61,6 +62,7 @@ def main():
                 try:
                     pull_process_and_push_data(device, device_attendance_logs)
                     status.set(f'{device["device_id"]}_push_timestamp', str(datetime.datetime.now()))
+                    status.save()
                     if os.path.exists(dump_file):
                         os.remove(dump_file)
                     info_logger.info("Successfully processed Device: "+ device['device_id'])
@@ -69,6 +71,7 @@ def main():
             if hasattr(config,'shift_type_device_mapping'):
                 update_shift_last_sync_timestamp(config.shift_type_device_mapping)
             status.set('mission_accomplished_timestamp', str(datetime.datetime.now()))
+            status.save()
             info_logger.info("Mission Accomplished!")
     except:
         error_logger.exception('exception has occurred in the main function...')
@@ -154,6 +157,7 @@ def get_all_attendance_from_device(ip, port=4370, timeout=30, device_id=None, cl
         info_logger.info("\t".join((ip, "Attendances Fetched:", str(len(attendances)))))
         status.set(f'{device_id}_push_timestamp', None)
         status.set(f'{device_id}_pull_timestamp', str(datetime.datetime.now()))
+        status.save()
         if len(attendances):
             # keeping a backup before clearing data incase the programs fails.
             # if everything goes well then this file is removed automatically at the end.
@@ -230,6 +234,7 @@ def update_shift_last_sync_timestamp(shift_type_device_mapping):
                         response_code = send_shift_sync_to_erpnext(shift, min_pull_timestamp)
                         if response_code == 200:
                             status.set(f'{shift}_sync_timestamp', str(min_pull_timestamp))
+                            status.save()
                 except:
                     error_logger.exception('Exception in update_shift_last_sync_timestamp, for shift:'+shift)
 
@@ -317,7 +322,7 @@ if not os.path.exists(config.LOGS_DIRECTORY):
     os.makedirs(config.LOGS_DIRECTORY)
 error_logger = setup_logger('error_logger', '/'.join([config.LOGS_DIRECTORY, 'error.log']), logging.ERROR)
 info_logger = setup_logger('info_logger', '/'.join([config.LOGS_DIRECTORY, 'logs.log']))
-status = pickledb.load('/'.join([config.LOGS_DIRECTORY, 'status.json']), True)
+status = PickleDB('/'.join([config.LOGS_DIRECTORY, 'status.json']))
 
 def infinite_loop(sleep_time=15):
     print("Service Running...")
