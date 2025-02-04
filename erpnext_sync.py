@@ -1,20 +1,25 @@
 
 import local_config as config
 import requests
+import signal
 import datetime
 import json
 import os
 import sys
-import time
 import logging
 from logging.handlers import RotatingFileHandler
 from pickledb import PickleDB
 from zk import ZK, const
 
+from threading import Event, Thread
+
+exit = Event()
+
 EMPLOYEE_NOT_FOUND_ERROR_MESSAGE = "No Employee found for the given employee field value"
 EMPLOYEE_INACTIVE_ERROR_MESSAGE = "Transactions cannot be created for an Inactive Employee"
 DUPLICATE_EMPLOYEE_CHECKIN_ERROR_MESSAGE = "This employee already has a log with the same timestamp"
 allowlisted_errors = [EMPLOYEE_NOT_FOUND_ERROR_MESSAGE, EMPLOYEE_INACTIVE_ERROR_MESSAGE, DUPLICATE_EMPLOYEE_CHECKIN_ERROR_MESSAGE]
+
 
 if hasattr(config,'allowed_exceptions'):
     allowlisted_errors_temp = []
@@ -26,9 +31,6 @@ device_punch_values_IN = getattr(config, 'device_punch_values_IN', [0,4])
 device_punch_values_OUT = getattr(config, 'device_punch_values_OUT', [1,5])
 ERPNEXT_VERSION = getattr(config, 'ERPNEXT_VERSION', 14)
 
-# possible area of further developemt
-    # Real-time events - setup getting events pushed from the machine rather then polling.
-        #- this is documented as 'Real-time events' in the ZKProtocol manual.
 
 # Notes:
 # Status Keys in status.json
@@ -50,6 +52,10 @@ def main():
             status.save()
             info_logger.info("Cleared for lift off!")
             for device in config.devices:
+                if device.get("live_sync"):
+                    status.set(f'{device["device_id"]}_push_timestamp', str(datetime.datetime.now()))
+                    continue
+
                 device_attendance_logs = None
                 info_logger.info("Processing Device: "+ device['device_id'])
                 dump_file = get_dump_file_name_and_directory(device['device_id'], device['ip'])
@@ -141,6 +147,56 @@ def pull_process_and_push_data(device, device_attendance_logs=None):
                 json.dumps(device_attendance_log, default=str)]))
             if not(any(error in erpnext_message for error in allowlisted_errors)):
                 raise Exception('API Call to ERPNext Failed.')
+
+
+def live_sync_attendance(device):
+    live_zk = ZK(device['ip'], port=4370, timeout=30)
+    live_conn = None
+
+    attendance_success_log_file = '_'.join(["attendance_success_log", device['device_id']])
+    attendance_failed_log_file = '_'.join(["attendance_failed_log", device['device_id']])
+    attendance_success_logger = setup_logger(attendance_success_log_file, '/'.join([config.LOGS_DIRECTORY, attendance_success_log_file])+'.log')
+    attendance_failed_logger = setup_logger(attendance_failed_log_file, '/'.join([config.LOGS_DIRECTORY, attendance_failed_log_file])+'.log')
+
+    try:
+        print(f"[Live Sync]Connecting to {device['device_id']}")
+        live_conn = live_zk.connect()
+        print(f"[Live Sync]Connected to {device['device_id']}")
+        for attendance in live_conn.live_capture():
+            if exit.is_set():
+                break
+
+            if attendance is None:
+                continue
+
+            device_attendance_log = attendance.__dict__
+            print(device_attendance_log)
+            punch_direction = device['punch_direction']
+            if punch_direction == 'AUTO':
+                if device_attendance_log['punch'] in device_punch_values_OUT:
+                    punch_direction = 'OUT'
+                elif device_attendance_log['punch'] in device_punch_values_IN:
+                    punch_direction = 'IN'
+                else:
+                    punch_direction = None
+            erpnext_status_code, erpnext_message = send_to_erpnext(device_attendance_log['user_id'], device_attendance_log['timestamp'], device['device_id'], punch_direction)
+            if erpnext_status_code == 200:
+                attendance_success_logger.info("\t".join([erpnext_message, str(device_attendance_log['uid']),
+                    str(device_attendance_log['user_id']), str(device_attendance_log['timestamp'].timestamp()),
+                    str(device_attendance_log['punch']), str(device_attendance_log['status']),
+                    json.dumps(device_attendance_log, default=str)]))
+            else:
+                attendance_failed_logger.error("\t".join([str(erpnext_status_code), str(device_attendance_log['uid']),
+                    str(device_attendance_log['user_id']), str(device_attendance_log['timestamp'].timestamp()),
+                    str(device_attendance_log['punch']), str(device_attendance_log['status']),
+                    json.dumps(device_attendance_log, default=str)]))
+                if not(any(error in erpnext_message for error in allowlisted_errors)):
+                    raise Exception('API Call to ERPNext Failed.')
+    except Exception as e:
+        print ("Process terminate : {}".format(e))
+    finally:
+        if live_conn:
+            live_conn.disconnect()
 
 
 def get_all_attendance_from_device(ip, port=4370, timeout=30, device_id=None, clear_from_device_on_fetch=False):
@@ -279,7 +335,6 @@ def get_last_line_from_file(file):
 
 
 def setup_logger(name, log_file, level=logging.INFO, formatter=None):
-
     if not formatter:
         formatter = logging.Formatter('%(asctime)s\t%(levelname)s\t%(message)s')
 
@@ -324,14 +379,46 @@ error_logger = setup_logger('error_logger', '/'.join([config.LOGS_DIRECTORY, 'er
 info_logger = setup_logger('info_logger', '/'.join([config.LOGS_DIRECTORY, 'logs.log']))
 status = PickleDB('/'.join([config.LOGS_DIRECTORY, 'status.json']))
 
-def infinite_loop(sleep_time=15):
-    print("Service Running...")
-    while True:
+
+def init_bulk_sync(sleep_time=15):
+    while not exit.is_set():
         try:
             main()
-            time.sleep(sleep_time)
+            exit.wait(sleep_time)
         except BaseException as e:
             print(e)
 
+
+def init_live_sync():
+    parallel_events = []
+    for device in config.devices:
+        if not device.get("live_sync"):
+            continue
+        
+        process = Thread(target=live_sync_attendance, kwargs={"device": device})
+        process.start()
+        parallel_events.append(process)
+    
+    for event in parallel_events:
+        event.join()
+
+
+def infinite_loop():
+    print("Service Running...")
+    thread1 = Thread(target=init_bulk_sync)
+    thread1.start()
+    thread2 = Thread(target=init_live_sync)
+    thread2.start()
+
+    thread1.join()
+    thread2.join()
+    
+
+def quit(signo, _frame):
+    print("Interrupted by %d, shutting down" % signo)
+    exit.set()
+
 if __name__ == "__main__":
+    for sig in ('TERM', 'HUP', 'INT'):
+        signal.signal(getattr(signal, 'SIG'+sig), quit)
     infinite_loop()
