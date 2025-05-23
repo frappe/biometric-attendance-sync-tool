@@ -128,7 +128,7 @@ def pull_process_and_push_data(device, device_attendance_logs=None):
                 punch_direction = 'IN'
             else:
                 punch_direction = None
-        erpnext_status_code, erpnext_message = send_to_erpnext(device_attendance_log['user_id'], device_attendance_log['timestamp'], device['device_id'], punch_direction)
+        erpnext_status_code, erpnext_message = send_to_erpnext(device_attendance_log['user_id'], device_attendance_log['timestamp'], device['device_id'], punch_direction, latitude=device['latitude'], longitude=device['longitude'])
         if erpnext_status_code == 200:
             attendance_success_logger.info("\t".join([erpnext_message, str(device_attendance_log['uid']),
                 str(device_attendance_log['user_id']), str(device_attendance_log['timestamp'].timestamp()),
@@ -178,9 +178,16 @@ def get_all_attendance_from_device(ip, port=4370, timeout=30, device_id=None, cl
     return list(map(lambda x: x.__dict__, attendances))
 
 
-def send_to_erpnext(employee_field_value, timestamp, device_id=None, log_type=None):
+def send_to_erpnext(employee_field_value, timestamp, device_id=None, log_type=None, latitude=None, longitude=None):
     """
-    Example: send_to_erpnext('12349',datetime.datetime.now(),'HO1','IN')
+    Examples: 
+    
+    For ERPNext, Frappe HR <= v14
+    send_to_erpnext('12349',datetime.datetime.now(),'HO1','IN')
+
+    For ERPNext, Frappe HR v15 onwards
+    If 'Allow Geolocation Tracking' is on
+    send_to_erpnext('12349',datetime.datetime.now(),'HO1','IN',latitude=12.34, longitude=56.78)
     """
     endpoint_app = "hrms" if ERPNEXT_VERSION > 13 else "erpnext"
     url = f"{config.ERPNEXT_URL}/api/method/{endpoint_app}.hr.doctype.employee_checkin.employee_checkin.add_log_based_on_employee_field"
@@ -192,7 +199,9 @@ def send_to_erpnext(employee_field_value, timestamp, device_id=None, log_type=No
         'employee_field_value' : employee_field_value,
         'timestamp' : timestamp.__str__(),
         'device_id' : device_id,
-        'log_type' : log_type
+        'log_type' : log_type,
+        'latitude' : latitude,
+        'longitude' : longitude
     }
     response = requests.request("POST", url, headers=headers, json=data)
     if response.status_code == 200:
