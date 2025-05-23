@@ -95,7 +95,7 @@ def pull_process_and_push_data(device, device_attendance_logs=None):
     # for finding the last successfull push and restart from that point (or) from a set 'config.IMPORT_START_DATE' (whichever is later)
     index_of_last = -1
     last_line = get_last_line_from_file('/'.join([config.LOGS_DIRECTORY, attendance_success_log_file])+'.log')
-    import_start_date = _safe_convert_date(config.IMPORT_START_DATE, "%Y%m%d")
+    import_start_date = _safe_convert_date(str(config.IMPORT_START_DATE), "%Y%m%d")
     if last_line or import_start_date:
         last_user_id = None
         last_timestamp = None
