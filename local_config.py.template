@@ -11,15 +11,17 @@ PULL_FREQUENCY = 60 # in minutes
 LOGS_DIRECTORY = 'logs' # logs of this script is stored in this directory
 IMPORT_START_DATE = None # format: '20190501'
 
-# Biometric device configs (all keys mandatory)
+# Biometric device configs (all keys mandatory, except latitude and longitude they are mandatory only if 'Allow Geolocation Tracking' is turned on in Frappe HR)
     #- device_id - must be unique, strictly alphanumerical chars only. no space allowed.
     #- ip - device IP Address
     #- punch_direction - 'IN'/'OUT'/'AUTO'/None
     #- clear_from_device_on_fetch: if set to true then attendance is deleted after fetch is successful.
                                     #(Caution: this feature can lead to data loss if used carelessly.)
+    #- latitude - float, latitude of the location of the device
+    #- longitude - float, longitude of the location of the device
 devices = [
-    {'device_id':'test_1','ip':'192.168.0.209', 'punch_direction': None, 'clear_from_device_on_fetch': False},
-    {'device_id':'test_2','ip':'192.168.2.209', 'punch_direction': None, 'clear_from_device_on_fetch': False}
+    {'device_id':'test_1','ip':'192.168.0.209', 'punch_direction': None, 'clear_from_device_on_fetch': False, 'latitude':0.0000,'longitude':0.0000},
+    {'device_id':'test_2','ip':'192.168.2.209', 'punch_direction': None, 'clear_from_device_on_fetch': False, 'latitude':0.0000,'longitude':0.0000}
 ]
 
 # Configs updating sync timestamp in the Shift Type DocType 
