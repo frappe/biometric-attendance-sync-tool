@@ -180,7 +180,14 @@ def get_all_attendance_from_device(ip, port=4370, timeout=30, device_id=None, cl
 
 def send_to_erpnext(employee_field_value, timestamp, device_id=None, log_type=None, latitude=None, longitude=None):
     """
-    Example: send_to_erpnext('12349',datetime.datetime.now(),'HO1','IN',latitude=12.34, longitude=56.78)
+    Examples: 
+    
+    For ERPNext, Frappe HR <= v14
+    send_to_erpnext('12349',datetime.datetime.now(),'HO1','IN')
+
+    For ERPNext, Frappe HR v15 onwards
+    If 'Allow Geolocation Tracking' is on
+    send_to_erpnext('12349',datetime.datetime.now(),'HO1','IN',latitude=12.34, longitude=56.78)
     """
     endpoint_app = "hrms" if ERPNEXT_VERSION > 13 else "erpnext"
     url = f"{config.ERPNEXT_URL}/api/method/{endpoint_app}.hr.doctype.employee_checkin.employee_checkin.add_log_based_on_employee_field"
