@@ -193,7 +193,8 @@ def send_to_erpnext(employee_field_value, timestamp, device_id=None, log_type=No
     url = f"{config.ERPNEXT_URL}/api/method/{endpoint_app}.hr.doctype.employee_checkin.employee_checkin.add_log_based_on_employee_field"
     headers = {
         'Authorization': "token "+ config.ERPNEXT_API_KEY + ":" + config.ERPNEXT_API_SECRET,
-        'Accept': 'application/json'
+        'Accept': 'application/json',
+        'Accept-Language': 'en'
     }
     data = {
         'employee_field_value' : employee_field_value,
@@ -251,7 +252,8 @@ def send_shift_sync_to_erpnext(shift_type_name, sync_timestamp):
     url = config.ERPNEXT_URL + "/api/resource/Shift Type/" + shift_type_name
     headers = {
         'Authorization': "token "+ config.ERPNEXT_API_KEY + ":" + config.ERPNEXT_API_SECRET,
-        'Accept': 'application/json'
+        'Accept': 'application/json',
+        'Accept-Language': 'en'
     }
     data = {
         "last_sync_of_checkin" : str(sync_timestamp)
